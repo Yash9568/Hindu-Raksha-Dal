@@ -1,0 +1,113 @@
+// Prisma schema for Hindu Raksha Dal (dev: SQLite)
+// We use a direct SQLite URL to avoid .env during initial scaffold.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  name        String
+  email       String   @unique
+  phone       String?  @unique
+  photoUrl    String?
+  passwordHash String  // to be filled when we implement auth
+  role        Role     @default(MEMBER)
+
+  posts       Post[]
+  membership  Membership?
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  title       String
+  content     String
+  type        PostType @default(TEXT)
+  status      PostStatus @default(PENDING)
+
+  author      User     @relation(fields: [authorId], references: [id])
+  authorId    String
+
+  // Implicit many-to-many relations (no explicit relation names or references)
+  categories  Category[]
+  tags        Tag[]
+
+  // SQLite doesn't support primitive arrays; store as JSON (e.g., ["url1","url2"]).
+  media       Json?
+  publishedAt DateTime?
+}
+
+enum PostType {
+  TEXT
+  IMAGE
+  VIDEO
+}
+
+enum PostStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Category {
+  id     String @id @default(cuid())
+  name   String @unique
+  slug   String @unique
+  posts  Post[]
+}
+
+model Tag {
+  id     String @id @default(cuid())
+  name   String @unique
+  slug   String @unique
+  posts  Post[]
+}
+
+model Membership {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  issuedAt   DateTime @default(now())
+
+  memberId   String   @unique // e.g., HRD-2025-00123
+  details    Json?
+  photoUrl   String?
+
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String   @unique
+}
+
+/// Contact messages submitted from the Contact Us form
+model ContactMessage {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  name      String
+  email     String?
+  phone     String?
+  subject   String?
+  message   String
+
+  status    MessageStatus @default(NEW)
+}
+
+enum MessageStatus {
+  NEW
+  READ
+  ARCHIVED
+}

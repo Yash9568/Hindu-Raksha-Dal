@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hindu Raksha Dal</title>
+  <meta name="description" content="Share knowledge about Hindu culture, traditions, festivals, and values." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- html2canvas and jsPDF for membership card export -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+<body class="font-inter bg-gray-50 text-gray-800">
+  <header class="bg-[#FF9933] text-white">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Om_symbol.svg/120px-Om_symbol.svg.png" alt="Logo" class="h-10 w-10"/>
+        <h1 class="text-2xl font-bold">Hindu Raksha Dal</h1>
+      </div>
+      <nav class="flex items-center gap-4">
+        <a href="#home" class="hover:underline">Home</a>
+        <a href="#posts" class="hover:underline">Posts</a>
+        <a href="#membership" class="hover:underline">Membership</a>
+        <a href="#search" class="hover:underline">Search</a>
+        <a href="/admin" class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded" title="Open Admin Portal">Admin</a>
+        <button id="btnOpenLogin" class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded">Login</button>
+        <button id="btnOpenRegister" class="bg-white text-[#FF9933] font-semibold px-3 py-1 rounded">Register</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-8 space-y-12">
+    <!-- Home / Hero -->
+    <section id="home" class="bg-white rounded-lg shadow p-6">
+      <div class="grid md:grid-cols-2 gap-6 items-center">
+        <div>
+          <h2 class="text-3xl font-bold mb-3">Welcome to Hindu Raksha Dal</h2>
+          <p class="mb-4">A community platform to share knowledge about Hindu culture, traditions, festivals, and values. Join us, contribute posts, and become a proud member.</p>
+          <div class="flex gap-3">
+            <a href="#posts" class="btn-primary">Create a Post</a>
+            <a href="#membership" class="btn-secondary">Get Membership</a>
+          </div>
+        </div>
+        <img alt="Culture" class="rounded-lg w-full h-64 object-cover" src="https://images.unsplash.com/photo-1548013146-72479768bada?q=80&w=1200&auto=format&fit=crop"/>
+      </div>
+    </section>
+
+    <!-- Latest Posts (static mock) -->
+    <section id="latest" class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-semibold">Latest Posts</h3>
+        <a href="#search" class="text-[#FF9933] hover:underline">Browse all</a>
+      </div>
+      <div id="latestPosts" class="grid md:grid-cols-3 gap-4"></div>
+    </section>
+
+    <!-- Create Post -->
+    <section id="posts" class="bg-white rounded-lg shadow p-6">
+      <h3 class="text-xl font-semibold mb-4">Create a Post</h3>
+      <form id="postForm" class="space-y-4">
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="label">Title</label>
+            <input type="text" id="postTitle" class="input" required/>
+          </div>
+          <div>
+            <label class="label">Type</label>
+            <select id="postType" class="input">
+              <option value="text">Text</option>
+              <option value="image">Image</option>
+              <option value="video">Video</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="label">Content</label>
+          <textarea id="postContent" class="input min-h-[120px]" placeholder="Write your content (for text posts)"></textarea>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="label">Upload Image</label>
+            <input type="file" id="postImage" accept="image/*" class="input"/>
+          </div>
+          <div>
+            <label class="label">Upload Video</label>
+            <input type="file" id="postVideo" accept="video/*" class="input"/>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="label">Categories (comma separated)</label>
+            <input type="text" id="postCategories" class="input" placeholder="Festivals, History"/>
+          </div>
+          <div>
+            <label class="label">Tags (comma separated)</label>
+            <input type="text" id="postTags" class="input" placeholder="#Diwali, #Culture"/>
+          </div>
+        </div>
+        <button class="btn-primary" type="submit">Publish (Demo)</button>
+      </form>
+
+      <div class="mt-6">
+        <h4 class="font-semibold mb-2">Preview</h4>
+        <div id="postPreview" class="border rounded p-3 text-sm text-gray-600">No content yet.</div>
+      </div>
+    </section>
+
+    <!-- Membership Card Generator -->
+    <section id="membership" class="bg-white rounded-lg shadow p-6">
+      <h3 class="text-xl font-semibold mb-4">Membership Card Generator</h3>
+      <form id="memberForm" class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="label">Full Name</label>
+          <input id="mName" class="input" required />
+        </div>
+        <div>
+          <label class="label">Email</label>
+          <input id="mEmail" type="email" class="input" required />
+        </div>
+        <div>
+          <label class="label">Phone</label>
+          <input id="mPhone" class="input" required />
+        </div>
+        <div>
+          <label class="label">Address</label>
+          <input id="mAddress" class="input" />
+        </div>
+        <div>
+          <label class="label">Date of Birth</label>
+          <input id="mDob" type="date" class="input" />
+        </div>
+        <div>
+          <label class="label">Photo</label>
+          <input id="mPhoto" type="file" accept="image/*" class="input" />
+        </div>
+        <div class="md:col-span-2 flex gap-3">
+          <button type="button" id="btnGenerateId" class="btn-primary">Generate Member ID</button>
+          <button type="button" id="btnDownloadPNG" class="btn-secondary">Download PNG</button>
+          <button type="button" id="btnDownloadPDF" class="btn-secondary">Download PDF</button>
+        </div>
+      </form>
+
+      <!-- Card preview -->
+      <div class="mt-6">
+        <h4 class="font-semibold mb-2">Preview</h4>
+        <div id="cardArea" class="w-[340px] h-[210px] bg-white border rounded relative overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-r from-[#FF9933] via-white to-[#138808] opacity-20"></div>
+          <div class="p-3 relative z-10 h-full flex gap-3">
+            <div class="w-24 h-24 bg-gray-100 border rounded overflow-hidden">
+              <img id="cardPhoto" class="w-full h-full object-cover" alt="Photo" />
+            </div>
+            <div class="flex-1 text-xs">
+              <div class="flex items-center justify-between">
+                <div class="font-bold text-[#FF9933]">Hindu Raksha Dal</div>
+                <div class="text-[10px]">Member ID</div>
+              </div>
+              <div id="cardId" class="text-sm font-semibold mt-1">HRD-YYYY-00000</div>
+              <div class="mt-2 space-y-1">
+                <div><span class="font-semibold">Name:</span> <span id="cardName">—</span></div>
+                <div><span class="font-semibold">Email:</span> <span id="cardEmail">—</span></div>
+                <div><span class="font-semibold">Phone:</span> <span id="cardPhone">—</span></div>
+                <div><span class="font-semibold">DOB:</span> <span id="cardDob">—</span></div>
+                <div><span class="font-semibold">Address:</span> <span id="cardAddress">—</span></div>
+              </div>
+              <div class="absolute bottom-2 left-3 text-[10px] text-gray-500">Issued: <span id="cardIssued">—</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Search -->
+    <section id="search" class="bg-white rounded-lg shadow p-6">
+      <h3 class="text-xl font-semibold mb-4">Search & Filter</h3>
+      <div class="grid md:grid-cols-4 gap-4">
+        <input id="q" class="input" placeholder="Keyword" />
+        <input id="cat" class="input" placeholder="Category" />
+        <input id="tag" class="input" placeholder="Tag" />
+        <button id="btnSearch" class="btn-primary">Search</button>
+      </div>
+      <div id="searchResults" class="mt-4 grid md:grid-cols-3 gap-4"></div>
+    </section>
+
+    <!-- Admin placeholder -->
+    <section id="admin" class="bg-white rounded-lg shadow p-6">
+      <h3 class="text-xl font-semibold mb-2">Admin Dashboard (Demo)</h3>
+      <p class="text-sm text-gray-600">This static prototype demonstrates the layout. In the full app, admins will moderate posts and manage users.</p>
+    </section>
+  </main>
+
+  <!-- Auth Modals -->
+  <div id="loginModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="text-lg font-semibold">Login</h4>
+        <button class="modal-close" data-target="loginModal">✕</button>
+      </div>
+      <form id="loginForm" class="space-y-3">
+        <input id="loginEmail" type="email" class="input" placeholder="Email" required />
+        <input id="loginPassword" type="password" class="input" placeholder="Password" required />
+        <button class="btn-primary w-full" type="submit">Login</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="registerModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="text-lg font-semibold">Register</h4>
+        <button class="modal-close" data-target="registerModal">✕</button>
+      </div>
+      <form id="registerForm" class="space-y-3">
+        <input id="regName" class="input" placeholder="Full Name" required />
+        <input id="regEmail" type="email" class="input" placeholder="Email" required />
+        <input id="regPhone" class="input" placeholder="Phone" required />
+        <input id="regPassword" type="password" class="input" placeholder="Password" required />
+        <label class="label">Photo</label>
+        <input id="regPhoto" type="file" accept="image/*" class="input" />
+        <button class="btn-primary w-full" type="submit">Create Account</button>
+      </form>
+    </div>
+  </div>
+
+  <footer class="py-8 text-center text-sm text-gray-500">
+    © <span id="year"></span> Hindu Raksha Dal. All rights reserved.
+  </footer>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>
