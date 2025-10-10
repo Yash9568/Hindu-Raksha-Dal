@@ -5,16 +5,16 @@ import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const { id } = params;
+  const { id } = context.params;
 
   // Example: read JSON body
   const body = await request.json();
 
   // TODO: update message in DB here
-  return new Response(
-    JSON.stringify({ success: true, id, data: body }),
+  return NextResponse.json(
+    { success: true, id, data: body },
     { status: 200 }
   );
 }
