@@ -9,6 +9,8 @@ type Post = {
   title: string;
   content: string;
   createdAt: string;
+  type: "TEXT" | "IMAGE" | "VIDEO";
+  media?: any; // JSON field: expected array of URLs or single URL
   author: { id: string; name: string | null; email: string | null };
 };
 
@@ -112,33 +114,60 @@ export default function AdminPage() {
           <p className="text-sm text-gray-600">No pending posts.</p>
         ) : (
           <ul className="space-y-3">
-            {posts.map((p) => (
-              <li key={p.id} className="border rounded p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold">{p.title}</div>
-                    <div className="text-xs text-gray-500">
-                      by {p.author?.name || p.author?.email || "Unknown"}
+            {posts.map((p) => {
+              // Normalize media as array of URLs
+              let mediaArr: string[] = [];
+              if (Array.isArray(p.media)) mediaArr = p.media as string[];
+              else if (p.media && typeof p.media === "string") mediaArr = [p.media];
+              else if (p.media && typeof p.media === "object" && (p.media as any).url) mediaArr = [(p.media as any).url];
+              const first = mediaArr[0];
+              const isVideo = p.type === "VIDEO" || (!!first && /\.(mp4|webm|ogg)(\?|#|$)/i.test(first));
+              const isImage = p.type === "IMAGE" || (!!first && /\.(png|jpe?g|gif|webp|avif|svg)(\?|#|$)/i.test(first));
+              return (
+                <li key={p.id} className="border rounded p-3">
+                  <div className="flex items-start gap-3 justify-between">
+                    <div className="flex items-start gap-3">
+                      {/* Media thumbnail */}
+                      <div className="w-32 h-20 bg-gray-100 border rounded overflow-hidden flex items-center justify-center">
+                        {first ? (
+                          isVideo ? (
+                            <video src={first} className="w-full h-full object-cover" controls preload="metadata" />
+                          ) : (
+                            <img src={first} className="w-full h-full object-cover" alt="media" />
+                          )
+                        ) : (
+                          <span className="text-xs text-gray-400">No media</span>
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <div className="font-semibold">{p.title}</div>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${p.type === "VIDEO" ? "border-purple-300 text-purple-700 bg-purple-50" : p.type === "IMAGE" ? "border-blue-300 text-blue-700 bg-blue-50" : "border-gray-300 text-gray-700 bg-gray-50"}`}>
+                            {p.type}
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-500">by {p.author?.name || p.author?.email || "Unknown"}</div>
+                        <p className="text-sm mt-2 whitespace-pre-wrap max-w-[60ch] line-clamp-3">{p.content}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        className="bg-green-600 text-white px-3 py-1 rounded"
+                        onClick={() => act(p.id, "approve")}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        className="bg-red-600 text-white px-3 py-1 rounded"
+                        onClick={() => act(p.id, "reject")}
+                      >
+                        Reject
+                      </button>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      className="bg-green-600 text-white px-3 py-1 rounded"
-                      onClick={() => act(p.id, "approve")}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      className="bg-red-600 text-white px-3 py-1 rounded"
-                      onClick={() => act(p.id, "reject")}
-                    >
-                      Reject
-                    </button>
-                  </div>
-                </div>
-                <p className="text-sm mt-2 whitespace-pre-wrap">{p.content}</p>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

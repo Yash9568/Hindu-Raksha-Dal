@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import PostActions from "@/components/PostActions";
+import HeroImage from "@/components/HeroImage";
 
 export default async function Home() {
   const posts = await prisma.post.findMany({
@@ -32,51 +34,112 @@ export default async function Home() {
               </Link>
             </div>
           </div>
-          <img
-            alt="Culture"
-            className="rounded-lg w-full h-64 object-cover"
-            src="https://images.unsplash.com/photo-1548013146-72479768bada?q=80&w=1200&auto=format&fit=crop"
-          />
+          <HeroImage alt="Hindu Raksha Dal Emblem" className="rounded-lg w-full h-48 md:h-56 object-contain bg-white" />
         </div>
       </section>
 
-      {/* Latest posts */}
+      {/* Home Feed (vertical) */}
       <section className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold">Latest Posts</h3>
-          <Link href="/posts" className="text-[#FF9933] hover:underline">
-            Browse all
-          </Link>
+          <h3 className="text-2xl font-bold">Feed</h3>
+          <Link href="/posts" className="text-[#FF9933] hover:underline font-medium">Create a Post</Link>
         </div>
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="space-y-4">
           {posts.length === 0 ? (
             <p className="text-sm text-gray-600">No posts yet. Be the first to create one!</p>
           ) : (
             posts.map((p: any) => {
               const type = String(p.type || "TEXT").toUpperCase();
-              const media: string[] = Array.isArray(p.media)
+              // Normalize media JSON into URL strings from various shapes
+              let mediaRaw: any[] = Array.isArray(p.media)
                 ? p.media
-                : (typeof p.media === "string" && p.media)
+                : p.media && typeof p.media === "object"
                 ? [p.media]
                 : [];
+              // If media is a JSON string, try to parse
+              if (typeof p.media === "string" && p.media) {
+                const s = p.media.trim();
+                if (s.startsWith("[") || s.startsWith("{")) {
+                  try {
+                    const parsed = JSON.parse(s);
+                    mediaRaw = Array.isArray(parsed) ? parsed : [parsed];
+                  } catch {
+                    mediaRaw = [p.media];
+                  }
+                } else {
+                  mediaRaw = [p.media];
+                }
+              }
+              function pickUrl(m: any): string {
+                if (typeof m === "string") return m;
+                return (
+                  m?.url ||
+                  m?.secure_url ||
+                  m?.src ||
+                  m?.path ||
+                  m?.link ||
+                  ""
+                );
+              }
+              // Flatten one level in case parsed JSON was nested like { urls: [...] }
+              const flattenOnce = (arr: any[]): any[] =>
+                arr.flatMap((x) => (Array.isArray(x) ? x : [x]));
+              let media: string[] = flattenOnce(mediaRaw)
+                .map(pickUrl)
+                .filter(Boolean);
+              if (media.length === 0 && typeof p.content === "string") {
+                // Fallback 1: extract first bare URL
+                const match1 = p.content.match(/https?:[^\s)"'>]+/i);
+                if (match1) media = [match1[0]];
+                // Fallback 2: extract from HTML tags like <img src="..."> or <video src='...'>
+                if (media.length === 0) {
+                  const match2 = p.content.match(/<\s*(?:img|video)[^>]*src=["']([^"']+)["']/i);
+                  if (match2 && match2[1]) media = [match2[1]];
+                }
+              }
               const first = media[0] as string | undefined;
+              const second = media[1] as string | undefined;
+              const third = media[2] as string | undefined;
+              const isVideo = (url?: string) => !!url && /(\.mp4|\.webm|\.ogg)(\?|#|$)/i.test(url);
+              const isImage = (url?: string) => !!url && /(\.png|\.jpe?g|\.gif|\.webp|\.avif|\.svg)(\?|#|$)/i.test(url);
               return (
-                <article key={p.id} className="border rounded overflow-hidden bg-white">
-                  {first && type === "IMAGE" && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={first} alt={p.title} className="w-full h-40 object-cover" />
-                  )}
-                  {first && type === "VIDEO" && (
-                    <video className="w-full h-40 object-cover" src={first} controls />
-                  )}
-                  <div className="p-3">
-                    <div className="text-xs text-gray-500 mb-1">by {p.author?.name || "Member"}</div>
-                    <h4 className="font-semibold line-clamp-1">{p.title}</h4>
-                    <p className="text-sm text-gray-600 line-clamp-3 mt-1">{p.content}</p>
-                    <div className="text-xs text-gray-400 mt-2">
-                      {p.categories.map((c: { name: string }) => c.name).join(", ") || "General"}
+                <article key={p.id} id={`post-${p.id}`} className="bg-white border rounded-xl shadow-sm overflow-hidden">
+                  {/* Header: avatar + name + time */}
+                  <div className="p-3 flex items-center gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={p.author?.photoUrl || ("https://ui-avatars.com/api/?name=" + encodeURIComponent(p.author?.name || "Member"))}
+                      alt={p.author?.name || "Member"}
+                      className="w-10 h-10 rounded-full object-cover bg-gray-100 border"
+                    />
+                    <div className="leading-tight">
+                      <div className="font-semibold">{p.author?.name || "Member"}</div>
+                      <div className="text-xs text-gray-500">{new Date(p.createdAt).toLocaleString()}</div>
                     </div>
+                    <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full bg-white border ${
+                      type === "VIDEO" ? "border-purple-200 text-purple-700" : type === "IMAGE" ? "border-blue-200 text-blue-700" : "border-gray-200 text-gray-700"
+                    }`}>{type}</span>
                   </div>
+
+                  {/* Text content */}
+                  {p.content ? (
+                    <div className="px-3 pb-2 text-sm whitespace-pre-wrap">{p.content}</div>
+                  ) : null}
+
+                  {/* Media (single primary item) */}
+                  {first ? (
+                    <div className="bg-black/5">
+                      {type === "VIDEO" || isVideo(first) ? (
+                        <video className="w-full max-h-[70vh] object-contain bg-black" src={first} controls preload="metadata" />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={first} alt={p.title} className="w-full object-contain bg-black" />
+                      )}
+                    </div>
+                  ) : null}
+
+                  {/* Actions: like / share / comment */}
+                  <PostActions postId={p.id} title={p.title} />
                 </article>
               );
             })

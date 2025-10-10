@@ -18,8 +18,8 @@ export async function GET(req: Request) {
           q
             ? {
                 OR: [
-                  { title: { contains: q, mode: "insensitive" } },
-                  { content: { contains: q, mode: "insensitive" } },
+                  { title: { contains: q } },
+                  { content: { contains: q } },
                 ],
               }
             : {},
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
         ],
       },
       orderBy: { createdAt: "desc" },
-      include: { author: { select: { id: true, name: true } }, categories: true, tags: true },
+      include: { author: { select: { id: true, name: true, photoUrl: true } }, categories: true, tags: true },
       take: 50,
     });
     return NextResponse.json({ posts });

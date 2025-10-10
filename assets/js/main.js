@@ -24,6 +24,56 @@
       </article>`).join('');
   }
 
+  async function printCard(){
+    try {
+      if (!c.area) return alert('Card area not found');
+      await new Promise(r => requestAnimationFrame(()=>requestAnimationFrame(r)));
+      const overlay = c.area.querySelector('.bg-gradient-to-r');
+      const prevDisplay = overlay ? overlay.style.display : '';
+      if (overlay) overlay.style.display = 'none';
+      const canvas = await html2canvas(c.area, {
+        scale: 3,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        allowTaint: true,
+        foreignObjectRendering: true,
+        width: c.area.offsetWidth || 340,
+        height: c.area.offsetHeight || 210,
+        scrollX: 0,
+        scrollY: 0,
+        onclone: (doc) => {
+          const style = doc.createElement('style');
+          style.textContent = `html, body, *, *::before, *::after { background: transparent !important; background-image: none !important; box-shadow: none !important; }
+          #cardArea, #cardArea * { color: #111827 !important; }`;
+          doc.head.appendChild(style);
+          const ov = doc.querySelector('#cardArea .bg-gradient-to-r');
+          if (ov) ov.style.display = 'none';
+        }
+      });
+      if (overlay) overlay.style.display = prevDisplay;
+      const dataUrl = canvas.toDataURL('image/png');
+      const w = window.open('', 'printWindow');
+      if (!w) { alert('Popup blocked. Allow popups to print.'); return; }
+      const html = `<!DOCTYPE html><html><head><title>Print Card</title>
+        <style>
+          html,body{margin:0;padding:0}
+          @page{size: auto;margin: 10mm}
+          .wrap{display:flex;align-items:center;justify-content:center;width:100vw;height:100vh}
+          img{max-width:100%;height:auto}
+        </style>
+      </head><body>
+        <div class="wrap"><img src="${dataUrl}" alt="Membership Card"/></div>
+        <script>window.addEventListener('load',()=>{setTimeout(()=>{window.print();}, 50)});</script>
+      </body></html>`;
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+    } catch (e){
+      console.error('Print failed', e);
+      alert('Print nahi ho paya. Kripya PDF/PNG export try karein.');
+    }
+  }
+
   // Modals
   $('#btnOpenLogin')?.addEventListener('click', () => $('#loginModal').classList.remove('hidden'));
   $('#btnOpenRegister')?.addEventListener('click', () => $('#registerModal').classList.remove('hidden'));
@@ -66,15 +116,38 @@
     name: $('#mName'), email: $('#mEmail'), phone: $('#mPhone'), address: $('#mAddress'), dob: $('#mDob'), photo: $('#mPhoto')
   };
   const c = {
-    id: $('#cardId'), name: $('#cardName'), email: $('#cardEmail'), phone: $('#cardPhone'), address: $('#cardAddress'), dob: $('#cardDob'), issued: $('#cardIssued'), photo: $('#cardPhoto'), area: $('#cardArea')
+    id: $('#cardId'), name: $('#cardName'), email: $('#cardEmail'), phone: $('#cardPhone'), address: $('#cardAddress'), dob: $('#cardDob'), issued: $('#cardIssued'), valid: $('#cardValid'), photo: $('#cardPhoto'), area: $('#cardArea')
   };
 
   function zeroPad(n, len=5){ return String(n).padStart(len,'0'); }
-  function generateMemberId(){
+  function generateMemberIdLocal(){
     const year = new Date().getFullYear();
-    // Simple demo sequence using time; backend will guarantee uniqueness later
-    const seq = Date.now() % 100000; 
+    const seq = Date.now() % 100000;
     return `HRD-${year}-${zeroPad(seq)}`;
+  }
+
+  async function generateMemberIdSmart(){
+    // Try backend if available, with a short timeout
+    const controller = new AbortController();
+    const t = setTimeout(()=>controller.abort(), 3000);
+    try {
+      const res = await fetch('/api/membership/generate', { method: 'POST', cache: 'no-store', signal: controller.signal });
+      clearTimeout(t);
+      if (res.ok) {
+        const data = await res.json().catch(()=>({}));
+        if (data && data.memberId) return data.memberId;
+      }
+    } catch(_) { /* ignore and fallback */ }
+    // Fallback to local
+    return generateMemberIdLocal();
+  }
+
+  function computeValidity(issuedDate){
+    try {
+      const d = issuedDate ? new Date(issuedDate) : new Date();
+      d.setFullYear(d.getFullYear() + 1);
+      return d.toLocaleDateString();
+    } catch { return '—'; }
   }
 
   function updateCardFromForm(){
@@ -83,7 +156,9 @@
     c.phone.textContent = m.phone.value || '—';
     c.address.textContent = m.address.value || '—';
     c.dob.textContent = m.dob.value || '—';
-    c.issued.textContent = new Date().toLocaleDateString();
+    const issued = new Date().toLocaleDateString();
+    c.issued.textContent = issued;
+    if (c.valid) c.valid.textContent = computeValidity(issued);
   }
 
   m.name.addEventListener('input', updateCardFromForm);
@@ -98,11 +173,31 @@
     c.photo.src = url;
   });
 
-  $('#btnGenerateId').addEventListener('click', ()=>{
-    const id = generateMemberId();
-    c.id.textContent = id;
-    updateCardFromForm();
+  let lastGenAt = 0, lastGenId = '';
+  const btnGen = $('#btnGenerateId');
+  btnGen.addEventListener('click', async ()=>{
+    const now = Date.now();
+    if (now - lastGenAt < 800 && lastGenId) { // prevent rapid duplicates
+      c.id.textContent = lastGenId;
+      updateCardFromForm();
+      return;
+    }
+    btnGen.disabled = true;
+    btnGen.textContent = 'Generating…';
+    try {
+      const id = await generateMemberIdSmart();
+      lastGenAt = Date.now();
+      lastGenId = id;
+      c.id.textContent = id;
+      updateCardFromForm();
+    } finally {
+      btnGen.disabled = false;
+      btnGen.textContent = 'Generate Member ID';
+    }
   });
+
+  // Initialize preview on load so card is never empty
+  updateCardFromForm();
 
   async function downloadPNG(){
     try {
@@ -117,7 +212,17 @@
         backgroundColor: '#ffffff',
         useCORS: true,
         allowTaint: true,
+        foreignObjectRendering: true,
+        width: c.area.offsetWidth || 340,
+        height: c.area.offsetHeight || 210,
+        scrollX: 0,
+        scrollY: 0,
         onclone: (doc) => {
+          // Global style override to avoid complex backgrounds/shadows
+          const style = doc.createElement('style');
+          style.textContent = `html, body, *, *::before, *::after { background: transparent !important; background-image: none !important; box-shadow: none !important; }
+          #cardArea, #cardArea * { color: #111827 !important; }`;
+          doc.head.appendChild(style);
           const ov = doc.querySelector('#cardArea .bg-gradient-to-r');
           if (ov) ov.style.display = 'none';
         }
@@ -137,26 +242,106 @@
     try {
       if (!c.area) return alert('Card area not found');
       await new Promise(r => requestAnimationFrame(()=>requestAnimationFrame(r)));
+      // Temporarily hide gradient overlays that html2canvas may skip
+      const overlay = c.area.querySelector('.bg-gradient-to-r');
+      const prevDisplay = overlay ? overlay.style.display : '';
+      if (overlay) overlay.style.display = 'none';
       const canvas = await html2canvas(c.area, {
         scale: 3,
         backgroundColor: '#ffffff',
         useCORS: true,
-        allowTaint: true
+        allowTaint: true,
+        onclone: (doc) => {
+          const ov = doc.querySelector('#cardArea .bg-gradient-to-r');
+          if (ov) ov.style.display = 'none';
+        }
       });
+      if (overlay) overlay.style.display = prevDisplay;
       const imgData = canvas.toDataURL('image/png');
       const { jsPDF } = window.jspdf || {};
       if (!jsPDF) { alert('jsPDF not loaded'); return; }
-      const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: [340, 210] });
-      pdf.addImage(imgData, 'PNG', 0, 0, 340, 210);
+      const pdfW = canvas.width;
+      const pdfH = canvas.height;
+      const pdf = new jsPDF({ orientation: (pdfW >= pdfH ? 'landscape' : 'portrait'), unit: 'px', format: [pdfW, pdfH] });
+      // Fill explicit white background then draw image to avoid transparency issues
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(0, 0, pdfW, pdfH, 'F');
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
       pdf.save((c.id.textContent || 'HRD-card') + '.pdf');
     } catch (e){
-      console.error('PDF export failed', e);
-      alert('Could not generate PDF. Try another image or remove external images from the card.');
+      console.error('PDF export failed (attempt 1)', e);
+      // Retry without photo to avoid CORS-tainted canvas issues
+      try {
+        const prevDisp = c.photo ? c.photo.style.display : '';
+        if (c.photo) c.photo.style.display = 'none';
+        await new Promise(r => requestAnimationFrame(()=>requestAnimationFrame(r)));
+        const canvas = await html2canvas(c.area, {
+          scale: 3,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          allowTaint: true,
+          foreignObjectRendering: true,
+          width: c.area.offsetWidth || 340,
+          height: c.area.offsetHeight || 210,
+          scrollX: 0,
+          scrollY: 0,
+          onclone: (doc) => {
+            const style = doc.createElement('style');
+            style.textContent = `html, body, *, *::before, *::after { background: transparent !important; background-image: none !important; box-shadow: none !important; }
+            #cardArea, #cardArea * { color: #111827 !important; }`;
+            doc.head.appendChild(style);
+            const ov = doc.querySelector('#cardArea .bg-gradient-to-r');
+            if (ov) ov.style.display = 'none';
+          }
+        });
+        if (c.photo) c.photo.style.display = prevDisp;
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf || {};
+        if (!jsPDF) { alert('jsPDF not loaded'); return; }
+        const pdfW = canvas.width;
+        const pdfH = canvas.height;
+        const pdf = new jsPDF({ orientation: (pdfW >= pdfH ? 'landscape' : 'portrait'), unit: 'px', format: [pdfW, pdfH] });
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(0, 0, pdfW, pdfH, 'F');
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+        pdf.save((c.id.textContent || 'HRD-card') + '.pdf');
+      } catch (e2) {
+        console.error('PDF export failed (attempt 2, no photo)', e2);
+        // Final fallback: try canvas renderer without foreignObjectRendering
+        try {
+          await new Promise(r => requestAnimationFrame(()=>requestAnimationFrame(r)));
+          const canvas = await html2canvas(c.area, {
+            scale: 3,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            allowTaint: true,
+            foreignObjectRendering: false,
+            width: c.area.offsetWidth || 340,
+            height: c.area.offsetHeight || 210,
+            scrollX: 0,
+            scrollY: 0
+          });
+          const imgData = canvas.toDataURL('image/png');
+          const { jsPDF } = window.jspdf || {};
+          if (!jsPDF) { alert('jsPDF not loaded'); return; }
+          const pdfW = canvas.width;
+          const pdfH = canvas.height;
+          const pdf = new jsPDF({ orientation: (pdfW >= pdfH ? 'landscape' : 'portrait'), unit: 'px', format: [pdfW, pdfH] });
+          pdf.setFillColor(255, 255, 255);
+          pdf.rect(0, 0, pdfW, pdfH, 'F');
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+          pdf.save((c.id.textContent || 'HRD-card') + '.pdf');
+        } catch (e3) {
+          console.error('PDF export failed (attempt 3, canvas renderer)', e3);
+          alert('Preview PDF me print nahi ho raha. Kripya page ko reload karke photo ke bina phir se koshish karein.');
+        }
+      }
     }
   }
 
   $('#btnDownloadPNG').addEventListener('click', downloadPNG);
   $('#btnDownloadPDF').addEventListener('click', downloadPDF);
+  $('#btnPrintCard').addEventListener('click', printCard);
 
   // Search demo
   const btnSearch = $('#btnSearch');

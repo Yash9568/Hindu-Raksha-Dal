@@ -141,6 +141,7 @@
           <button type="button" id="btnGenerateId" class="btn-primary">Generate Member ID</button>
           <button type="button" id="btnDownloadPNG" class="btn-secondary">Download PNG</button>
           <button type="button" id="btnDownloadPDF" class="btn-secondary">Download PDF</button>
+          <button type="button" id="btnPrintCard" class="btn-secondary">Print</button>
         </div>
       </form>
 
@@ -166,7 +167,10 @@
                 <div><span class="font-semibold">DOB:</span> <span id="cardDob">—</span></div>
                 <div><span class="font-semibold">Address:</span> <span id="cardAddress">—</span></div>
               </div>
-              <div class="absolute bottom-2 left-3 text-[10px] text-gray-500">Issued: <span id="cardIssued">—</span></div>
+              <div class="absolute bottom-2 left-3 text-[10px] text-gray-500 space-y-0.5">
+                <div>Issued: <span id="cardIssued">—</span></div>
+                <div>Valid Till: <span id="cardValid">—</span></div>
+              </div>
             </div>
           </div>
         </div>

@@ -21,6 +21,9 @@ export default function Header() {
           <Link href="/" className="hover:underline">
             Home
           </Link>
+          <Link href="/feed" className="hover:underline">
+            Feed
+          </Link>
           <Link href="/posts" className="hover:underline">
             Posts
           </Link>
