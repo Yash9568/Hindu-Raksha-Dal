@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  context: any
 ) {
   const session = await getServerSession(authOptions);
   const role = (session?.user as any)?.role;
@@ -13,7 +13,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const id = params.id;
+  const id = context?.params?.id as string;
   const body = await req.json().catch(() => ({}));
   const action = String(body?.action || "").toLowerCase();
   if (!id || !["approve", "reject"].includes(action)) {

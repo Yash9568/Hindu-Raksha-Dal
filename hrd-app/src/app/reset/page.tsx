@@ -1,9 +1,9 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const sp = useSearchParams();
   const router = useRouter();
   const token = sp.get("token") || "";
@@ -30,7 +30,7 @@ export default function ResetPasswordPage() {
       setMsg("Password updated. You can login now.");
       setTimeout(()=> router.push("/login"), 1200);
     } catch (e: any) {
-      setErr(e?.message || "Error");
+      setErr((e as Error)?.message || "Error");
     } finally {
       setLoading(false);
     }
@@ -55,5 +55,13 @@ export default function ResetPasswordPage() {
         </button>
       </form>
     </section>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<section className="max-w-md mx-auto p-6">Loading…</section>}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
