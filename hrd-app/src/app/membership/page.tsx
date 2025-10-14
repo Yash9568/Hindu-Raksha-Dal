@@ -14,10 +14,6 @@ export default function MembershipPage() {
             style={{ width: "100%", height: "100%", border: 0 }}
           />
         </div>
-        <div className="text-sm text-gray-600 mt-3">
-          If the preview does not load, open directly:
-          <a href="/membership.html" className="text-blue-600 underline ml-1">/membership.html</a>
-        </div>
       </div>
     </div>
   );

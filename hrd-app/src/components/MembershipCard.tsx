@@ -5,7 +5,7 @@ import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 
 type MembershipCardProps = {
-  user: { name?: string; phone?: string; email?: string };
+  user: { name?: string; phone?: string; email?: string; address?: string; dob?: string | Date };
   membership: { memberId?: string; issuedAt?: string | Date };
 };
 
@@ -77,24 +77,28 @@ export default function MembershipCard({ user, membership }: MembershipCardProps
       {/* Card Preview */}
       <div
         ref={cardRef}
-        className="w-80 p-4 rounded-xl shadow-lg border bg-white"
+        className="w-80 p-4 rounded-xl shadow-lg border border-[#FF9933] bg-white"
       >
-        <h2 className="text-xl font-bold text-center mb-2">
-          Hindu Raksha Dal
-        </h2>
-        <div className="border p-3 rounded-lg text-sm">
-          <p><b>Name:</b> {user?.name || "—"}</p>
-          <p><b>Mobile:</b> {user?.phone || "—"}</p>
-          <p><b>Email:</b> {user?.email || "—"}</p>
-          <p><b>Member ID:</b> {membership?.memberId || "—"}</p>
-          <p><b>Issued At:</b> {membership?.issuedAt ? new Date(membership.issuedAt).toLocaleDateString() : "—"}</p>
+        <div className="rounded-lg overflow-hidden mb-2">
+          <div className="bg-[#FF9933] text-white text-center font-bold py-2 text-lg">
+            Hindu Raksha Dal
+          </div>
+        </div>
+        <div className="border border-[#FF9933]/50 p-3 rounded-lg text-sm">
+          <p><b className="text-[#FF9933]">Name:</b> <span className="text-[#FF9933]">{user?.name || "—"}</span></p>
+          <p><b className="text-[#FF9933]">Mobile:</b> <span className="text-[#FF9933]">{user?.phone || "—"}</span></p>
+          <p><b className="text-[#FF9933]">Email:</b> <span className="text-[#FF9933]">{user?.email || "—"}</span></p>
+          <p><b className="text-[#FF9933]">Address:</b> <span className="text-[#FF9933]">{user?.address || "—"}</span></p>
+          <p><b className="text-[#FF9933]">DOB:</b> <span className="text-[#FF9933]">{user?.dob ? new Date(user.dob).toLocaleDateString() : "—"}</span></p>
+          <p><b>Member ID:</b> <span className="text-[#FF9933]">{membership?.memberId || "—"}</span></p>
+          <p><b>Issued At:</b> <span className="text-[#FF9933]">{membership?.issuedAt ? new Date(membership.issuedAt).toLocaleDateString() : "—"}</span></p>
         </div>
       </div>
 
       {/* Generate Button */}
       <button
         onClick={handleGeneratePDF}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700"
+        className="px-4 py-2 bg-[#FF9933] text-white rounded-lg shadow-md hover:bg-[#ff8a0d]"
       >
         Generate & Download PDF
       </button>

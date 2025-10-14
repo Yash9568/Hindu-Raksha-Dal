@@ -20,6 +20,7 @@
     .btn-primary:hover { background:#1d4ed8 }
     .btn-secondary { background:#059669; color:#fff; }
     .btn-secondary:hover { background:#047857 }
+    .btn[disabled] { opacity:.6; cursor:not-allowed; filter:grayscale(10%); }
 
     /* Membership preview */
     .preview-wrap { padding:24px; }
@@ -42,10 +43,10 @@
     .fields { margin-top:10px; font-size:12px; display:grid; gap:4px; }
     .fields b { font-weight:700; }
     /* Distinct colors for labels and values on the front card */
-    .preview .row b { color:#111; }
+    .preview .row b { color:#FF9933; }
     .preview .row span { color:#FFFFFF; font-weight:600; }
-    /* Specific values in black as requested */
-    #fName, #fMobile, #fEmail, #fDob { color:#111 !important; font-weight:700; }
+    /* Force Name/Mobile/Email/Address/DOB values to saffron */
+    #fName, #fMobile, #fEmail, #fDob, #fAddress { color:#FF9933 !important; font-weight:700; }
     .footer { position:absolute; right:12px; bottom:10px; font-size:11px; font-weight:700; color:#ffffff; text-shadow:0 1px 1px rgba(0,0,0,.35); z-index:2; background: rgba(0,0,0,0.25); padding:3px 6px; border-radius:6px; pointer-events:none; }
     .id { position:absolute; right:12px; top:10px; font-size:11px; font-weight:800; color:#f59e0b; text-shadow: 0 1px 1px rgba(0,0,0,0.25); }
     .brand { position:absolute; left:12px; bottom:12px; display:flex; align-items:center; gap:8px; font-size:11px; opacity:0.95; }
@@ -63,7 +64,8 @@
     .stack { display:grid; gap:12px }
     .details { font-size:12px; max-width: 230px; }
     .break { word-break: break-word; white-space: normal; }
-    #fAddress { color:#111 !important; font-weight:700; }
+    /* Address already included above */
+    /* #fAddress rule merged with saffron override */
     .error { border-color:#ef4444 !important; box-shadow:0 0 0 3px rgba(239,68,68,.12) !important }
   </style>
   <!-- Web font for improved typography -->
@@ -145,7 +147,8 @@
           </div>
         </div>
         <div style="margin-top:12px; display:grid; gap:10px; grid-template-columns: 1fr;">
-          <button id="btnDownloadPDF" class="btn btn-secondary" type="button">Download PDF</button>
+          <button id="btnDownloadPDF" class="btn btn-secondary" type="button" disabled>Download PDF</button>
+          <div id="saveStatus" style="font-size:12px; color:#6b7280;"></div>
         </div>
       </div>
     </div>
@@ -191,11 +194,19 @@
         els.fDob.textContent = els.dob.value || '—';
       }
 
+      // Any form change updates preview and disables PDF download until re-generated
       ['input','change'].forEach(ev => {
-        els.name.addEventListener(ev, syncPreview);
-        els.mobile.addEventListener(ev, syncPreview);
-        els.email.addEventListener(ev, syncPreview);
-        els.dob.addEventListener(ev, syncPreview);
+        const handler = () => {
+          syncPreview();
+          if (els.btnDownloadPDF) els.btnDownloadPDF.disabled = true;
+          const s = document.getElementById('saveStatus');
+          if (s) s.textContent = '';
+        };
+        els.name.addEventListener(ev, handler);
+        els.mobile.addEventListener(ev, handler);
+        els.email.addEventListener(ev, handler);
+        els.address.addEventListener(ev, handler);
+        els.dob.addEventListener(ev, handler);
       });
 
       els.photo.addEventListener('change', (e) => {
@@ -204,6 +215,7 @@
         const reader = new FileReader();
         reader.onload = () => { els.avatarImg.src = reader.result; };
         reader.readAsDataURL(f);
+        if (els.btnDownloadPDF) els.btnDownloadPDF.disabled = true;
       });
 
       function hashCode(str){
@@ -268,6 +280,42 @@
             if (footerEl) footerEl.style.display = 'block';
           } catch { els.issued.textContent = now.toLocaleDateString(); }
           // valid removed
+          // Persist membership WITHOUT requiring login
+          try {
+            const photoUrl = (els.avatarImg && els.avatarImg.src && els.avatarImg.src.startsWith('data:')) ? els.avatarImg.src : '';
+            const payload = {
+              name: els.name.value || '',
+              mobile: els.mobile.value || '',
+              email: els.email.value || '',
+              address: els.address.value || '',
+              dob: els.dob.value || '',
+              photoUrl,
+            };
+            const resp = await fetch('/api/membership', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            const s = document.getElementById('saveStatus');
+            if (!resp.ok) {
+              console.warn('Anonymous membership save failed with status', resp.status);
+              if (s) s.textContent = 'Save failed (status ' + resp.status + ').';
+            } else {
+              const data = await resp.json().catch(()=>null);
+              if (data && data.membership && data.membership.memberId) {
+                els.memberId.textContent = data.membership.memberId;
+                if (s) s.textContent = 'Saved to database: ' + data.membership.memberId;
+              } else {
+                if (s) s.textContent = 'Saved.';
+              }
+            }
+          } catch (e) {
+            console.warn('Anonymous membership save error', e);
+            const s = document.getElementById('saveStatus');
+            if (s) s.textContent = 'Save error. Check console.';
+          }
+          // Enable download after successful generation steps
+          if (els.btnDownloadPDF) els.btnDownloadPDF.disabled = false;
         } catch (e) {
           alert('Failed to generate Member ID');
         }
@@ -354,6 +402,10 @@
       }
 
       els.btnDownloadPDF.addEventListener('click', async () => {
+        if (els.btnDownloadPDF && els.btnDownloadPDF.disabled) {
+          alert('Please generate the card first.');
+          return;
+        }
         try {
           await waitForReady();
           const area = els.cardArea;

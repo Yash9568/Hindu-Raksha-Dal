@@ -10,6 +10,7 @@ type Props = {
 
 export default function HeroImage({ alt = "", className = "", srcs }: Props) {
   const fallbacks = srcs && srcs.length ? srcs : [
+    "/images/hrd-hero.jpeg/hrd-hero.jpg",
     "/images/hrd-hero.jpg",
     "/images/hrd-hero.jpeg",
     "/images/hrd-hero.png",
