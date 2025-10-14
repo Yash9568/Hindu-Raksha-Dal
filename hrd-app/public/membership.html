@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Membership Card Generator</title>
+  <style>
+    :root { --bg1:#3b82f6; --bg2:#2563eb; --bg3:#1d4ed8; --text:#111; --white:#fff; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#f5f6f8; color:#111; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .grid { display:grid; grid-template-columns: 1fr; gap:24px; }
+    @media(min-width: 1024px){ .grid{ grid-template-columns: 1fr 1fr; } }
+    .card { background:#fff; border-radius:12px; box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
+    .card .content { padding: 24px; }
+    .h2 { font-size: 22px; font-weight: 800; margin: 0 0 16px; color:#1f2937; }
+    .input { width:100%; box-sizing: border-box; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; outline:none; font-size:14px; }
+    .input:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.15) }
+    .btn { display:inline-flex; align-items:center; justify-content:center; padding:10px 14px; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:14px; }
+    .btn-primary { background:#2563eb; color:#fff; }
+    .btn-primary:hover { background:#1d4ed8 }
+    .btn-secondary { background:#059669; color:#fff; }
+    .btn-secondary:hover { background:#047857 }
+
+    /* Membership preview */
+    .preview-wrap { padding:24px; }
+    .preview-title { font-size: 20px; font-weight: 800; color:#1f2937; margin:0 0 12px; }
+    .preview { position:relative; width: 360px; height: 220px; border-radius:14px; overflow:hidden; color:#fff; box-shadow: 0 12px 28px rgba(0,0,0,0.18); border:1.5px solid rgba(255,255,255,0.5); }
+    .preview-bg { position:absolute; inset:0; background-image:
+      radial-gradient(120px 80px at 20% 0%, rgba(255,255,255,0.18), transparent 70%),
+      radial-gradient(140px 100px at 90% 20%, rgba(255,255,255,0.12), transparent 70%),
+      linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 50%, var(--bg3) 100%);
+    }
+    .preview-pattern { position:absolute; inset:0; background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.06) 0, rgba(255,255,255,0.06) 8px, transparent 8px, transparent 16px); pointer-events:none; }
+    .preview-inner { position:relative; z-index:1; padding:16px; padding-bottom:28px; height:100%; display:flex; flex-direction:column; }
+    .title { text-align:center; font-weight:900; font-size:18px; letter-spacing:0.6px; text-transform:uppercase; text-shadow: 0 1px 2px rgba(0,0,0,0.15); color:#FF9933; }
+    .subtitle { text-align:center; font-size:12px; opacity:.95; margin-top:4px; letter-spacing:0.3px; color: rgba(255,255,255,0.95); }
+    .pill { position:absolute; left:10px; top:10px; font-size:10px; font-weight:800; color:#f59e0b; background: rgba(245,158,11,.18); padding:2px 6px; border-radius:999px; border:1px solid rgba(245,158,11,.55); backdrop-filter: blur(2px); }
+    .divider { height:1px; background: rgba(255,255,255,.35); margin-top:8px; }
+    .row { display:flex; align-items:center; gap:14px; margin-top:14px; }
+    .avatar { width:68px; height:68px; border-radius:9999px; overflow:hidden; border:2px solid #fff; background: rgba(255,255,255,.15); flex:none; }
+    .avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+    .fields { margin-top:10px; font-size:12px; display:grid; gap:4px; }
+    .fields b { font-weight:700; }
+    /* Distinct colors for labels and values on the front card */
+    .preview .row b { color:#111; }
+    .preview .row span { color:#FFFFFF; font-weight:600; }
+    /* Specific values in black as requested */
+    #fName, #fMobile, #fEmail, #fDob { color:#111 !important; font-weight:700; }
+    .footer { position:absolute; right:12px; bottom:10px; font-size:11px; font-weight:700; color:#ffffff; text-shadow:0 1px 1px rgba(0,0,0,.35); z-index:2; background: rgba(0,0,0,0.25); padding:3px 6px; border-radius:6px; pointer-events:none; }
+    .id { position:absolute; right:12px; top:10px; font-size:11px; font-weight:800; color:#f59e0b; text-shadow: 0 1px 1px rgba(0,0,0,0.25); }
+    .brand { position:absolute; left:12px; bottom:12px; display:flex; align-items:center; gap:8px; font-size:11px; opacity:0.95; }
+    .brand-badge { width:22px; height:22px; border-radius:9999px; background: rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.45); display:flex; align-items:center; justify-content:center; font-weight:900; letter-spacing:0.5px; }
+    /* .motto removed as requested */
+    .logo { position:absolute; left:12px; top:42px; width:28px; height:28px; border-radius:9999px; border:1px solid rgba(255,255,255,.6); background: rgba(255,255,255,.12); object-fit:cover; }
+    .qr-box { position:absolute; right:12px; top:42px; background:transparent; border:none; border-radius:6px; padding:0; width:64px; height:64px; display:flex; align-items:center; justify-content:center; }
+    .qr-box canvas { display:block; width:64px; height:64px; }
+    .tricolor { position:absolute; left:0; right:0; bottom:0; height:6px; display:flex; z-index:1; }
+    .tricolor > span { flex:1; }
+    .tricolor .saffron { background:#FF9933; }
+    .tricolor .white { background:#FFFFFF; }
+    .tricolor .green { background:#138808; }
+    .label { font-size: 13px; color:#374151; margin-bottom:6px; display:block }
+    .stack { display:grid; gap:12px }
+    .details { font-size:12px; max-width: 230px; }
+    .break { word-break: break-word; white-space: normal; }
+    #fAddress { color:#111 !important; font-weight:700; }
+    .error { border-color:#ef4444 !important; box-shadow:0 0 0 3px rgba(239,68,68,.12) !important }
+  </style>
+  <!-- Web font for improved typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <!-- QRCode generator -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="grid">
+      <!-- Form -->
+      <div class="card">
+        <div class="content">
+          <h2 class="h2">Membership Registration</h2>
+          <div class="stack">
+            <div>
+              <label class="label" for="name">Full Name</label>
+              <input id="name" type="text" class="input" placeholder="Enter full name" required />
+            </div>
+            <div>
+              <label class="label" for="mobile">Mobile Number</label>
+              <input id="mobile" type="tel" class="input" placeholder="10-digit mobile" required pattern="[0-9]{10}" />
+            </div>
+            <div>
+              <label class="label" for="email">Email</label>
+              <input id="email" type="email" class="input" placeholder="name@example.com" required />
+            </div>
+            <div>
+              <label class="label" for="address">Address</label>
+              <textarea id="address" class="input" rows="2" placeholder="House no, Street, City, State, PIN" required></textarea>
+            </div>
+            <div>
+              <label class="label" for="dob">Date of Birth</label>
+              <input id="dob" type="date" class="input" required />
+            </div>
+            <div>
+              <label class="label" for="photo">Profile Photo</label>
+              <input id="photo" type="file" class="input" accept="image/*" />
+            </div>
+            <div>
+              <button id="btnGenerate" class="btn btn-primary" type="button">Generate Member ID</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview + Download (Front + Back) -->
+      <div class="card preview-wrap">
+        <div class="preview-title">Preview</div>
+        <div id="cardArea" class="preview">
+          <div class="preview-bg"></div>
+          <div class="preview-pattern"></div>
+          <div class="preview-inner">
+            <div class="pill">HRD ID</div>
+            <div class="title">Hindu Raksha Dal</div>
+            <div class="subtitle">Membership Card</div>
+            <div class="divider"></div>
+            <div class="id" id="memberId">Not generated</div>
+            <img id="logoImg" class="logo" alt="Logo" src="/logo.png" onerror="this.style.display='none'"/>
+            <div class="qr-box"><canvas id="frontQrCanvas" width="56" height="56"></canvas></div>
+            <div class="row">
+              <div class="avatar"><img id="avatarImg" alt="User" /></div>
+              <div class="details">
+                <div><b>Name:</b> <span id="fName">—</span></div>
+                <div><b>Mobile:</b> <span id="fMobile">—</span></div>
+                <div><b>Email:</b> <span id="fEmail">—</span></div>
+                <div class="break"><b>Address:</b> <span id="fAddress">—</span></div>
+                <div><b>DOB:</b> <span id="fDob">—</span></div>
+              </div>
+              <div class="chip" title="Smart ID"></div>
+            </div>
+            <div class="footer">Issued on: <span id="issued">—</span></div>
+            <div class="brand"><span class="brand-badge">HR</span><span>Hindu Raksha Dal</span></div>
+            <div class="tricolor"><span class="saffron"></span><span class="white"></span><span class="green"></span></div>
+          </div>
+        </div>
+        <div style="margin-top:12px; display:grid; gap:10px; grid-template-columns: 1fr;">
+          <button id="btnDownloadPDF" class="btn btn-secondary" type="button">Download PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const els = {
+        name: document.getElementById('name'),
+        mobile: document.getElementById('mobile'),
+        email: document.getElementById('email'),
+        dob: document.getElementById('dob'),
+        photo: document.getElementById('photo'),
+        avatarImg: document.getElementById('avatarImg'),
+        fName: document.getElementById('fName'),
+        fMobile: document.getElementById('fMobile'),
+        fEmail: document.getElementById('fEmail'),
+        fDob: document.getElementById('fDob'),
+        memberId: document.getElementById('memberId'),
+        cardArea: document.getElementById('cardArea'),
+        btnGenerate: document.getElementById('btnGenerate'),
+        btnDownloadPDF: document.getElementById('btnDownloadPDF'),
+        logoImg: document.getElementById('logoImg'),
+        frontQrCanvas: document.getElementById('frontQrCanvas'),
+        issued: document.getElementById('issued'),
+        // valid removed
+        address: document.getElementById('address'),
+        fAddress: document.getElementById('fAddress'),
+      };
+
+      async function renderQRTo(canvas, text){
+        try {
+          if (!window.QRCode || !canvas) return;
+          await QRCode.toCanvas(canvas, text || 'https://hindurakshadal.org', { width: canvas.width, margin: 0 });
+        } catch {}
+      }
+
+      function syncPreview(){
+        els.fName.textContent = els.name.value || '—';
+        els.fMobile.textContent = els.mobile.value || '—';
+        els.fEmail.textContent = els.email.value || '—';
+        els.fAddress.textContent = els.address.value || '—';
+        els.fDob.textContent = els.dob.value || '—';
+      }
+
+      ['input','change'].forEach(ev => {
+        els.name.addEventListener(ev, syncPreview);
+        els.mobile.addEventListener(ev, syncPreview);
+        els.email.addEventListener(ev, syncPreview);
+        els.dob.addEventListener(ev, syncPreview);
+      });
+
+      els.photo.addEventListener('change', (e) => {
+        const f = e.target.files && e.target.files[0];
+        if(!f) return;
+        const reader = new FileReader();
+        reader.onload = () => { els.avatarImg.src = reader.result; };
+        reader.readAsDataURL(f);
+      });
+
+      function hashCode(str){
+        let h = 5381;
+        for (let i=0; i<str.length; i++) h = ((h << 5) + h) + str.charCodeAt(i);
+        return h >>> 0;
+      }
+
+      function buildDeterministicId(name, mobile){
+        const cleanName = String(name||'').trim().toUpperCase().replace(/\s+/g,' ');
+        const cleanMobile = String(mobile||'').replace(/\D+/g,'').slice(-10);
+        const year = new Date().getFullYear();
+        const base = `${year}|${cleanName}|${cleanMobile}`;
+        const hash = hashCode(base);
+        const seq = (hash % 90000) + 10000; // 5 digits
+        return `HRD-${year}-${seq}`;
+      }
+
+      function validateRequired(){
+        // reset errors
+        [els.name, els.mobile, els.email, els.address, els.dob, els.photo].forEach(el => el && el.classList.remove('error'));
+        let ok = true;
+        const name = (els.name.value||'').trim();
+        const mobileDigits = (els.mobile.value||'').replace(/\D+/g,'');
+        const email = (els.email.value||'').trim();
+        const address = (els.address.value||'').trim();
+        const dob = (els.dob.value||'').trim();
+        const hasPhoto = !!(els.avatarImg && els.avatarImg.src && els.avatarImg.src.startsWith('data:'));
+        const emailOk = /.+@.+\..+/.test(email);
+        if (name.length < 2) { els.name.classList.add('error'); ok = false; }
+        if (mobileDigits.length !== 10) { els.mobile.classList.add('error'); ok = false; }
+        if (!emailOk) { els.email.classList.add('error'); ok = false; }
+        if (address.length < 5) { els.address.classList.add('error'); ok = false; }
+        if (!dob) { els.dob.classList.add('error'); ok = false; }
+        if (!hasPhoto) { els.photo.classList.add('error'); ok = false; }
+        if (!ok) { alert('Please fill all fields correctly: Name, 10-digit Mobile, valid Email, Address, DOB, and a Profile Photo.'); }
+        return ok;
+      }
+
+      els.btnGenerate.addEventListener('click', async () => {
+        try {
+          if (!validateRequired()) return;
+          // Deterministic Member ID from Name + Mobile
+          const now = new Date();
+          const id = buildDeterministicId(els.name.value, els.mobile.value);
+          els.memberId.textContent = id;
+          // Front QR using verify URL
+          const verifyUrl = (location.origin || 'https://hindurakshadal.org') + '/verify?m=' + encodeURIComponent(id);
+          await renderQRTo(els.frontQrCanvas, verifyUrl);
+          // Set issued date (persist first generation date for this ID)
+          try {
+            const k = 'hrd_issued_' + id;
+            let issuedISO = localStorage.getItem(k);
+            if (!issuedISO) {
+              issuedISO = now.toISOString();
+              localStorage.setItem(k, issuedISO);
+            }
+            const issuedDate = new Date(issuedISO);
+            const issuedText = issuedDate.toLocaleDateString();
+            els.issued.textContent = issuedText;
+            const footerEl = document.querySelector('#cardArea .footer');
+            if (footerEl) footerEl.style.display = 'block';
+          } catch { els.issued.textContent = now.toLocaleDateString(); }
+          // valid removed
+        } catch (e) {
+          alert('Failed to generate Member ID');
+        }
+      });
+
+      async function waitForReady() {
+        // wait fonts if supported
+        if (document.fonts && document.fonts.ready) {
+          try { await document.fonts.ready; } catch(e) {}
+        }
+        // wait avatar if present
+        const img = els.avatarImg;
+        if (img && img.src && !img.complete) {
+          await new Promise(r => { img.addEventListener('load', () => r(true), { once:true }); img.addEventListener('error', () => r(true), { once:true }); });
+        }
+        // double RAF to flush layout
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => r(true))));
+      }
+
+      async function capture(area) {
+        const rect = area.getBoundingClientRect();
+        const width = Math.max(1, Math.ceil(rect.width));
+        const height = Math.max(1, Math.ceil(rect.height));
+        const scale = Math.max(2, Math.min(3, (window.devicePixelRatio || 1) * 1.5));
+        return await html2canvas(area, {
+          scale,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          allowTaint: true,
+          width,
+          height,
+          foreignObjectRendering: true,
+          onclone: () => {},
+        });
+      }
+
+      async function captureFallback(area) {
+        const rect = area.getBoundingClientRect();
+        const width = Math.max(1, Math.ceil(rect.width));
+        const height = Math.max(1, Math.ceil(rect.height));
+        const clone = area.cloneNode(true);
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'fixed';
+        wrapper.style.left = '-10000px';
+        wrapper.style.top = '0';
+        wrapper.style.width = width + 'px';
+        wrapper.style.height = height + 'px';
+        wrapper.style.background = '#ffffff';
+        wrapper.appendChild(clone);
+        document.body.appendChild(wrapper);
+
+        // Inline images to data URLs
+        const imgs = Array.from(wrapper.querySelectorAll('img'));
+        for (const img of imgs) {
+          try {
+            const src = img.getAttribute('src') || '';
+            if (!src || src.startsWith('data:')) continue;
+            const resp = await fetch(src).catch(() => null);
+            if (resp && resp.ok) {
+              const blob = await resp.blob();
+              const reader = new FileReader();
+              const dataUrl = await new Promise((res, rej) => { reader.onload = () => res(reader.result); reader.onerror = rej; reader.readAsDataURL(blob); });
+              img.src = dataUrl;
+              if (!img.complete) await new Promise(r => img.addEventListener('load', () => r(true), { once:true }));
+            }
+          } catch {}
+        }
+
+        // No style overrides in fallback to preserve full color/gradient
+
+        await new Promise(r => requestAnimationFrame(() => r(true)));
+        const canvas = await html2canvas(wrapper, {
+          scale: Math.max(2, Math.min(3, (window.devicePixelRatio || 1) * 1.5)),
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          allowTaint: true,
+          width,
+          height,
+          // Disable foreignObject in fallback to avoid engine issues
+          foreignObjectRendering: false,
+        });
+        if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+        return canvas;
+      }
+
+      els.btnDownloadPDF.addEventListener('click', async () => {
+        try {
+          await waitForReady();
+          const area = els.cardArea;
+          // Ensure footer is visible and has text
+          try {
+            const footerEl = area.querySelector('.footer');
+            if (footerEl) footerEl.style.display = 'block';
+          } catch {}
+          // Rehydrate 'Issued on' from storage using current ID (in case of reload)
+          try {
+            const idText = (els.memberId && els.memberId.textContent || '').trim();
+            if (idText) {
+              const k = 'hrd_issued_' + idText;
+              const iso = localStorage.getItem(k);
+              if (iso) {
+                const issuedText = new Date(iso).toLocaleDateString();
+                const issuedSpan = area.querySelector('#issued');
+                if (issuedSpan) issuedSpan.textContent = issuedText;
+              }
+            }
+          } catch {}
+          // Give layout a frame to flush updated text before capture
+          await new Promise(r => requestAnimationFrame(() => r(true)));
+          // Swap QR canvas with an IMG to guarantee capture
+          let qrImg, qrParent;
+          try {
+            const qr = els.frontQrCanvas;
+            if (qr) {
+              const data = qr.toDataURL('image/png');
+              if (data && data.length > 1000) {
+                qrImg = document.createElement('img');
+                qrImg.src = data;
+                qrImg.style.width = qr.width + 'px';
+                qrImg.style.height = qr.height + 'px';
+                qrParent = qr.parentNode;
+                if (qrParent) { qrParent.replaceChild(qrImg, qr); }
+              }
+            }
+          } catch {}
+
+          let canvas = await capture(area);
+          // Retry once if zero-sized canvas
+          if (!canvas || canvas.width === 0 || canvas.height === 0) {
+            await new Promise(r => setTimeout(r, 120));
+            await waitForReady();
+            canvas = await capture(area);
+            if (!canvas || canvas.width === 0 || canvas.height === 0) {
+              // Fallback to offscreen clone capture
+              canvas = await captureFallback(area);
+              if (!canvas || canvas.width === 0 || canvas.height === 0) {
+                // Final safety retry without foreignObjectRendering at all
+                const rect = area.getBoundingClientRect();
+                canvas = await html2canvas(area, {
+                  scale: Math.max(2, Math.min(3, (window.devicePixelRatio || 1) * 1.5)),
+                  backgroundColor: '#ffffff',
+                  useCORS: true,
+                  allowTaint: true,
+                  width: Math.max(1, Math.ceil(rect.width)),
+                  height: Math.max(1, Math.ceil(rect.height)),
+                  foreignObjectRendering: false,
+                });
+              }
+            }
+          }
+
+          // If canvas appears suspiciously small (potentially blank), try a safer fallback once more
+          try {
+            const probe = canvas.toDataURL('image/png');
+            if (!probe || probe.length < 15000) {
+              // Attempt fallback capture path
+              const retryCanvas = await captureFallback(area);
+              if (retryCanvas && retryCanvas.width && retryCanvas.height) {
+                canvas = retryCanvas;
+              }
+            }
+          } catch {}
+
+          const { jsPDF } = window.jspdf;
+          // Choose orientation based on canvas for better fit
+          const orient = canvas.width >= canvas.height ? 'landscape' : 'portrait';
+          const pdf = new jsPDF(orient, 'pt', 'a4');
+          const pageW = pdf.internal.pageSize.getWidth();
+          const pageH = pdf.internal.pageSize.getHeight();
+          const margin = 36;
+          const maxW = pageW - margin * 2;
+          const maxH = pageH - margin * 2;
+          // Prefer JPEG to avoid alpha/PNG issues resulting in blank rendering
+          const imgData = canvas.toDataURL('image/jpeg', 0.92);
+          // Scale to fit within both width and height
+          const scale = Math.min(maxW / canvas.width, maxH / canvas.height);
+          const drawW = Math.max(1, Math.floor(canvas.width * scale));
+          const drawH = Math.max(1, Math.floor(canvas.height * scale));
+          // Center the image
+          const x = Math.floor((pageW - drawW) / 2);
+          const y = Math.floor((pageH - drawH) / 2);
+          pdf.setFillColor(255,255,255);
+          pdf.rect(0,0,pageW,pageH,'F');
+          pdf.addImage(imgData, 'JPEG', x, y, drawW, drawH);
+          // Outline around the card image for clear border in PDF
+          pdf.setDrawColor(0,0,0);
+          pdf.setLineWidth(2);
+          pdf.rect(x, y, drawW, drawH);
+
+          pdf.save((els.memberId.textContent || 'membership') + '.pdf');
+          // Restore QR canvas
+          try {
+            if (qrImg && qrParent) {
+              qrParent.replaceChild(els.frontQrCanvas, qrImg);
+            }
+          } catch {}
+        } catch(e) {
+          console.error(e);
+          alert('PDF export failed.');
+        }
+      });
+
+      // PNG and Print options removed per request
+
+      // init
+      syncPreview();
+    })();
+  </script>
+</body>
+</html>
