@@ -4,6 +4,9 @@ import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 export const authOptions: NextAuthOptions = {
+  // In production, NEXTAUTH_SECRET must be set in env.
+  // In dev, fall back to a static secret to simplify local runs.
+  secret: process.env.NEXTAUTH_SECRET || (process.env.NODE_ENV !== "production" ? "dev-secret" : undefined),
   session: { strategy: "jwt" },
   providers: [
     CredentialsProvider({
