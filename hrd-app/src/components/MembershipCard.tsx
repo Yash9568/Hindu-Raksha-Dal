@@ -34,7 +34,7 @@ export default function MembershipCard({ user, membership }: MembershipCardProps
       allowTaint: true,
       width,
       height,
-      foreignObjectRendering: true,
+      foreignObjectRendering: false,
     });
 
     // If canvas somehow zero-sized, do a minimal retry without foreignObjectRendering
@@ -59,12 +59,12 @@ export default function MembershipCard({ user, membership }: MembershipCardProps
       }
     }
 
-    const imgData = canvas.toDataURL("image/png");
+    const imgData = canvas.toDataURL("image/jpeg", 0.92);
     // Create a PDF sized exactly to the canvas to avoid scaling issues
     const pdf = new jsPDF({ orientation: canvas.width >= canvas.height ? "landscape" : "portrait", unit: "px", format: [canvas.width, canvas.height] });
     pdf.setFillColor(255, 255, 255);
     pdf.rect(0, 0, canvas.width, canvas.height, "F");
-    pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+    pdf.addImage(imgData, "JPEG", 0, 0, canvas.width, canvas.height);
     // Add outline for clear border in PDF
     pdf.setDrawColor(0, 0, 0);
     pdf.setLineWidth(2);
