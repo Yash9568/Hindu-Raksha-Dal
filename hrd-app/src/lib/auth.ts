@@ -20,11 +20,15 @@ export const authOptions: NextAuthOptions = {
         const { emailOrPhone, password } = credentials as Record<string, string>;
         if (!emailOrPhone || !password) return null;
 
+        const identifierRaw = String(emailOrPhone).trim();
+        const emailLower = identifierRaw.toLowerCase();
+        const phoneDigits = identifierRaw.replace(/\D+/g, "");
+
         const user = await prisma.user.findFirst({
           where: {
             OR: [
-              { email: emailOrPhone.toLowerCase() },
-              { phone: emailOrPhone },
+              { email: emailLower },
+              ...(phoneDigits ? [{ phone: phoneDigits }] as const : []),
             ],
           },
         });

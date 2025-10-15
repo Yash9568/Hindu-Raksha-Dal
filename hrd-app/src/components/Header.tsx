@@ -11,22 +11,24 @@ export default function Header() {
 
   return (
     <header className="bg-[#FF9933] text-white">
-      <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span aria-hidden className="text-2xl">🕉️</span>
-          <Link href="/" className="text-2xl font-bold">
+      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span aria-hidden className="text-xl md:text-2xl">🕉️</span>
+          <Link href="/" className="text-lg md:text-2xl font-bold leading-none">
             Hindu Raksha Dal
           </Link>
         </div>
         <button
           type="button"
-          className="md:hidden inline-flex items-center justify-center p-2 rounded hover:bg-white/10 focus:outline-none"
+          className="md:hidden inline-flex items-center justify-center p-3 rounded-md hover:bg-white/10 active:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/30"
           aria-label="Toggle navigation"
           onClick={() => setOpen((v) => !v)}
         >
-          <span className="block w-6 h-0.5 bg-white mb-1"></span>
-          <span className="block w-6 h-0.5 bg-white mb-1"></span>
-          <span className="block w-6 h-0.5 bg-white"></span>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M4 6H20" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+            <path d="M4 12H20" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+            <path d="M4 18H20" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
         </button>
         <nav className="hidden md:flex items-center gap-4">
           <Link href="/" className="hover:underline">
