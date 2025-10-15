@@ -395,16 +395,19 @@ export default function ProfilePage() {
               placeholder="Paste image URL"
               ref={photoInputRef}
             />
-            <div className="mt-2 flex items-center gap-3">
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) selectPhoto(f);
-                }}
-              />
+            <div className="mt-2 flex items-center gap-3 w-full">
+              <div className="w-full">
+                <label className="block text-xs text-gray-600 mb-1">Choose photo</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-3 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[#FF9933] file:text-white hover:file:bg-[#ff8a0d] border rounded px-3 py-2"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) selectPhoto(f);
+                  }}
+                />
+              </div>
               {uploading && <span className="text-xs text-gray-600">Processing…</span>}
             </div>
             <div className={`mt-2 text-xs ${isDragging ? "text-[#FF9933]" : "text-gray-500"}`}>
