@@ -11,7 +11,7 @@ export async function GET() {
   }
   const posts = await prisma.post.findMany({
     where: { status: "PENDING" },
-    include: { author: { select: { id: true, name: true, email: true } }, categories: true, tags: true },
+    include: { author: { select: { id: true, name: true, email: true } } },
     orderBy: { createdAt: "desc" },
     take: 100,
   });
