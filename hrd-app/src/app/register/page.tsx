@@ -7,10 +7,22 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [photoUrl, setPhotoUrl] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
+
+  async function handleUploadIfAny() {
+    if (!photoFile) return "";
+    const fd = new FormData();
+    fd.append("file", photoFile);
+    const res = await fetch("/api/upload", { method: "POST", body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || "Upload failed");
+    return data.url as string;
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -18,10 +30,12 @@ export default function RegisterPage() {
     setError(null);
     setOk(null);
     try {
+      const uploadedUrl = await handleUploadIfAny();
+      const finalPhoto = uploadedUrl || photoUrl || "";
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone, password, photoUrl }),
+        body: JSON.stringify({ name, email, phone, password, photoUrl: finalPhoto }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to register");
@@ -54,24 +68,41 @@ export default function RegisterPage() {
         />
         <input
           className="w-full border rounded px-3 py-2"
-          placeholder="Phone (optional)"
+          placeholder="Phone"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-        />
-        <input
-          type="password"
-          className="w-full border rounded px-3 py-2"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <input
-          className="w-full border rounded px-3 py-2"
-          placeholder="Photo URL (optional)"
-          value={photoUrl}
-          onChange={(e) => setPhotoUrl(e.target.value)}
-        />
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"}
+            className="w-full border rounded px-3 py-2 pr-10"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-600 hover:text-gray-800"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? "Hide" : "Show"}
+          </button>
+        </div>
+        <div>
+          <label className="block text-sm text-gray-700 mb-1">Upload Photo (optional)</label>
+          <input
+            type="file"
+            accept="image/*"
+            className="w-full border rounded px-3 py-2"
+            onChange={(e) => {
+              const f = e.target.files?.[0] || null;
+              setPhotoFile(f);
+            }}
+          />
+        </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
         {ok && <p className="text-sm text-green-600">{ok}</p>}
         <button disabled={loading} type="submit" className="bg-[#FF9933] text-white px-4 py-2 rounded w-full">

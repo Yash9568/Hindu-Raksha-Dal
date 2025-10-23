@@ -23,12 +23,12 @@ export async function GET(req: Request) {
                 ],
               }
             : {},
-          category ? { categories: { some: { slug: category } } } : {},
-          tag ? { tags: { some: { slug: tag } } } : {},
+          category ? { categories: { has: category } } : {},
+          tag ? { tags: { has: tag?.replace(/^#/, "") } } : {},
         ],
       },
       orderBy: { createdAt: "desc" },
-      include: { author: { select: { id: true, name: true, photoUrl: true } }, categories: true, tags: true },
+      include: { author: { select: { id: true, name: true, photoUrl: true } } },
       take: 50,
     });
     return NextResponse.json({ posts });
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
 
     const authorId = (session.user as any).id as string;
 
-    // Upsert categories/tags from comma separated strings
+    // Prepare categories/tags from comma separated strings (denormalized)
     const catList: string[] = (categories || "")
       .split(",")
       .map((s: string) => s.trim())
@@ -59,30 +59,6 @@ export async function POST(req: Request) {
       .map((s: string) => s.trim().replace(/^#/, ""))
       .filter(Boolean);
 
-    const catConnect = await Promise.all(
-      catList.map(async (name) => {
-        const slug = name.toLowerCase().replace(/\s+/g, "-");
-        const c = await prisma.category.upsert({
-          where: { slug },
-          update: {},
-          create: { name, slug },
-        });
-        return { id: c.id };
-      })
-    );
-
-    const tagConnect = await Promise.all(
-      tagList.map(async (name) => {
-        const slug = name.toLowerCase().replace(/\s+/g, "-");
-        const t = await prisma.tag.upsert({
-          where: { slug },
-          update: {},
-          create: { name, slug },
-        });
-        return { id: t.id };
-      })
-    );
-
     const post = await prisma.post.create({
       data: {
         title,
@@ -90,11 +66,11 @@ export async function POST(req: Request) {
         type: (type || "TEXT").toUpperCase(),
         status: "PENDING",
         author: { connect: { id: authorId } },
-        categories: { connect: catConnect },
-        tags: { connect: tagConnect },
+        categories: catList,
+        tags: tagList,
         media: media ?? null,
       },
-      include: { categories: true, tags: true },
+      include: {},
     });
 
     return NextResponse.json({ post }, { status: 201 });

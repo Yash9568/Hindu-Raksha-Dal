@@ -6,12 +6,12 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id          String   @id @default(cuid())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -32,7 +32,7 @@ enum Role {
 }
 
 model Post {
-  id          String   @id @default(cuid())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -42,11 +42,11 @@ model Post {
   status      PostStatus @default(PENDING)
 
   author      User     @relation(fields: [authorId], references: [id])
-  authorId    String
+  authorId    String   @db.ObjectId
 
-  // Implicit many-to-many relations (no explicit relation names or references)
-  categories  Category[]
-  tags        Tag[]
+  // Denormalized scalar lists for MongoDB
+  categories  String[]
+  tags        String[]
 
   // SQLite doesn't support primitive arrays; store as JSON (e.g., ["url1","url2"]).
   media       Json?
@@ -65,22 +65,8 @@ enum PostStatus {
   REJECTED
 }
 
-model Category {
-  id     String @id @default(cuid())
-  name   String @unique
-  slug   String @unique
-  posts  Post[]
-}
-
-model Tag {
-  id     String @id @default(cuid())
-  name   String @unique
-  slug   String @unique
-  posts  Post[]
-}
-
 model Membership {
-  id         String   @id @default(cuid())
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
   createdAt  DateTime @default(now())
   issuedAt   DateTime @default(now())
 
@@ -89,12 +75,12 @@ model Membership {
   photoUrl   String?
 
   user       User     @relation(fields: [userId], references: [id])
-  userId     String   @unique
+  userId     String   @unique @db.ObjectId
 }
 
 /// Contact messages submitted from the Contact Us form
 model ContactMessage {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   createdAt DateTime @default(now())
 
   name      String

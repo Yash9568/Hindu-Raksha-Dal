@@ -77,21 +77,21 @@ export default function MembershipCard({ user, membership }: MembershipCardProps
       {/* Card Preview */}
       <div
         ref={cardRef}
-        className="w-80 p-4 rounded-xl shadow-lg border border-[#FF9933] bg-white"
+        className="w-80 p-4 rounded-xl shadow-lg border border-[#FF9933] bg-[#FF9933] text-white"
       >
         <div className="rounded-lg overflow-hidden mb-2">
-          <div className="bg-[#FF9933] text-white text-center font-bold py-2 text-lg">
+          <div className="text-white text-center font-bold py-2 text-lg">
             Hindu Raksha Dal
           </div>
         </div>
-        <div className="border border-[#FF9933]/50 p-3 rounded-lg text-sm">
-          <p><b className="text-[#FF9933]">Name:</b> <span className="text-[#FF9933]">{user?.name || "—"}</span></p>
-          <p><b className="text-[#FF9933]">Mobile:</b> <span className="text-[#FF9933]">{user?.phone || "—"}</span></p>
-          <p><b className="text-[#FF9933]">Email:</b> <span className="text-[#FF9933]">{user?.email || "—"}</span></p>
-          <p><b className="text-[#FF9933]">Address:</b> <span className="text-[#FF9933]">{user?.address || "—"}</span></p>
-          <p><b className="text-[#FF9933]">DOB:</b> <span className="text-[#FF9933]">{user?.dob ? new Date(user.dob).toLocaleDateString() : "—"}</span></p>
-          <p><b>Member ID:</b> <span className="text-[#FF9933]">{membership?.memberId || "—"}</span></p>
-          <p><b>Issued At:</b> <span className="text-[#FF9933]">{membership?.issuedAt ? new Date(membership.issuedAt).toLocaleDateString() : "—"}</span></p>
+        <div className="border border-white/60 p-3 rounded-lg text-sm">
+          <p><b className="text-white">Name:</b> <span className="text-white">{user?.name || "—"}</span></p>
+          <p><b className="text-white">Mobile:</b> <span className="text-white">{user?.phone || "—"}</span></p>
+          <p><b className="text-white">Email:</b> <span className="text-white">{user?.email || "—"}</span></p>
+          <p><b className="text-white">Address:</b> <span className="text-white">{user?.address || "—"}</span></p>
+          <p><b className="text-white">DOB:</b> <span className="text-white">{user?.dob ? new Date(user.dob).toLocaleDateString() : "—"}</span></p>
+          <p><b className="text-black">Member ID:</b> <span className="text-black font-bold">{membership?.memberId || "—"}</span></p>
+          <p><b className="text-white">Issued At:</b> <span className="text-white">{membership?.issuedAt ? new Date(membership.issuedAt).toLocaleDateString() : "—"}</span></p>
         </div>
       </div>
 

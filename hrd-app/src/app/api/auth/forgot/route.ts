@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "node:crypto";
+import { sendEmail } from "@/lib/email";
+
+export const runtime = "nodejs";
 
 function base64url(input: Buffer | string) {
   return Buffer.from(input)
@@ -42,8 +45,19 @@ export async function POST(req: Request) {
     const base = origin || (new URL(req.url)).origin;
     const resetUrl = `${base}/reset?token=${encodeURIComponent(token)}`;
 
-    // NOTE: In production, send this link via email. For now, return it so user can copy.
-    return NextResponse.json({ message: "Reset link generated", resetUrl }, { status: 200 });
+    // Send email if configured
+    let emailSent = false;
+    const subject = "Reset your password";
+    const html = `
+      <p>Hello ${user.name || ""},</p>
+      <p>You requested a password reset. Click the link below to set a new password. This link expires in 15 minutes.</p>
+      <p><a href="${resetUrl}">Reset Password</a></p>
+      <p>If you did not request this, please ignore this email.</p>
+    `;
+    const res = await sendEmail(email, subject, html);
+    emailSent = !!res.ok;
+
+    return NextResponse.json({ message: emailSent ? "Reset link emailed" : "Reset link generated" }, { status: 200 });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Server error" }, { status: 500 });
   }

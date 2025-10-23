@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Membership Card Generator</title>
   <style>
-    :root { --bg1:#3b82f6; --bg2:#2563eb; --bg3:#1d4ed8; --text:#111; --white:#fff; }
+    :root { --bg1:#FF9933; --bg2:#FF8A0D; --bg3:#FF6A00; --text:#111; --white:#fff; }
     body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#f5f6f8; color:#111; }
     .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
     .grid { display:grid; grid-template-columns: 1fr; gap:24px; }
@@ -33,22 +33,22 @@
     }
     .preview-pattern { position:absolute; inset:0; background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.06) 0, rgba(255,255,255,0.06) 8px, transparent 8px, transparent 16px); pointer-events:none; }
     .preview-inner { position:relative; z-index:1; padding:16px; padding-bottom:28px; height:100%; display:flex; flex-direction:column; }
-    .title { text-align:center; font-weight:900; font-size:18px; letter-spacing:0.6px; text-transform:uppercase; text-shadow: 0 1px 2px rgba(0,0,0,0.15); color:#FF9933; }
+    .title { text-align:center; font-weight:900; font-size:18px; letter-spacing:0.6px; text-transform:uppercase; text-shadow: 0 1px 2px rgba(0,0,0,0.15); color:#FFFFFF; }
     .subtitle { text-align:center; font-size:12px; opacity:.95; margin-top:4px; letter-spacing:0.3px; color: rgba(255,255,255,0.95); }
-    .pill { position:absolute; left:10px; top:10px; font-size:10px; font-weight:800; color:#f59e0b; background: rgba(245,158,11,.18); padding:2px 6px; border-radius:999px; border:1px solid rgba(245,158,11,.55); backdrop-filter: blur(2px); }
+    .pill { position:absolute; left:10px; top:10px; font-size:10px; font-weight:800; color:#FFFFFF; background: rgba(245,158,11,.18); padding:2px 6px; border-radius:999px; border:1px solid rgba(245,158,11,.55); backdrop-filter: blur(2px); }
     .divider { height:1px; background: rgba(255,255,255,.35); margin-top:8px; }
     .row { display:flex; align-items:center; gap:14px; margin-top:14px; }
     .avatar { width:68px; height:68px; border-radius:9999px; overflow:hidden; border:2px solid #fff; background: rgba(255,255,255,.15); flex:none; }
     .avatar img { width:100%; height:100%; object-fit:cover; display:block; }
     .fields { margin-top:10px; font-size:12px; display:grid; gap:4px; }
     .fields b { font-weight:700; }
-    /* Distinct colors for labels and values on the front card */
-    .preview .row b { color:#FF9933; }
+    /* Distinct colors for labels and values on the front card (white on orange bg) */
+    .preview .row b { color:#FFFFFF; }
     .preview .row span { color:#FFFFFF; font-weight:600; }
-    /* Force Name/Mobile/Email/Address/DOB values to saffron */
-    #fName, #fMobile, #fEmail, #fDob, #fAddress { color:#FF9933 !important; font-weight:700; }
+    /* Force Name/Mobile/Email/Address/DOB values to white */
+    #fName, #fMobile, #fEmail, #fDob, #fAddress { color:#FFFFFF !important; font-weight:700; }
     .footer { position:absolute; right:12px; bottom:10px; font-size:11px; font-weight:700; color:#ffffff; text-shadow:0 1px 1px rgba(0,0,0,.35); z-index:2; background: rgba(0,0,0,0.25); padding:3px 6px; border-radius:6px; pointer-events:none; }
-    .id { position:absolute; right:12px; top:10px; font-size:11px; font-weight:800; color:#f59e0b; text-shadow: 0 1px 1px rgba(0,0,0,0.25); }
+    .id { position:absolute; right:12px; top:10px; font-size:11px; font-weight:800; color:#FFFFFF; text-shadow: 0 1px 1px rgba(0,0,0,0.25); }
     .brand { position:absolute; left:12px; bottom:12px; display:flex; align-items:center; gap:8px; font-size:11px; opacity:0.95; }
     .brand-badge { width:22px; height:22px; border-radius:9999px; background: rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.45); display:flex; align-items:center; justify-content:center; font-weight:900; letter-spacing:0.5px; }
     /* .motto removed as requested */

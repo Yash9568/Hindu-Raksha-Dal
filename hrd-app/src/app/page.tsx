@@ -2,14 +2,24 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import PostActions from "@/components/PostActions";
 import HeroImage from "@/components/HeroImage";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export default async function Home() {
-  const posts = await prisma.post.findMany({
-    where: { status: "APPROVED" },
-    orderBy: { createdAt: "desc" },
-    include: { categories: true, tags: true, author: { select: { name: true } } },
-    take: 6,
-  });
+  const session = await getServerSession(authOptions);
+  const loggedIn = !!session?.user;
+  let posts: any[] = [];
+  try {
+    posts = await prisma.post.findMany({
+      where: { status: "APPROVED" },
+      orderBy: { createdAt: "desc" },
+      include: { author: { select: { name: true } } },
+      take: 6,
+    });
+  } catch (e) {
+    // In case DB is unavailable or auth fails, render page without feed rather than crashing
+    posts = [];
+  }
   return (
     <div className="space-y-12">
       {/* Hero */}
@@ -23,9 +33,11 @@ export default async function Home() {
               become a proud member.
             </p>
             <div className="flex gap-3">
-              <Link href="/posts" className="bg-[#FF9933] text-white px-4 py-2 rounded">
-                Create a Post
-              </Link>
+              {loggedIn && (
+                <Link href="/posts" className="bg-[#FF9933] text-white px-4 py-2 rounded">
+                  Create a Post
+                </Link>
+              )}
               <Link
                 href="/membership"
                 className="border border-[#FF9933] text-[#FF9933] px-4 py-2 rounded"
@@ -42,7 +54,9 @@ export default async function Home() {
       <section className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-2xl font-bold">Feed</h3>
-          <Link href="/posts" className="text-[#FF9933] hover:underline font-medium">Create a Post</Link>
+          {loggedIn && (
+            <Link href="/posts" className="text-[#FF9933] hover:underline font-medium">Create a Post</Link>
+          )}
         </div>
         <div className="space-y-4">
           {posts.length === 0 ? (

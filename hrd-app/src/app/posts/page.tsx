@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 export default function PostsPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [title, setTitle] = useState("");
   const [type, setType] = useState<"text" | "image" | "video">("text");
   const [content, setContent] = useState("");
@@ -123,6 +125,11 @@ export default function PostsPage() {
   return (
     <section className="bg-white rounded-lg shadow p-6">
       <h3 className="text-xl font-semibold mb-4">Create a Post</h3>
+      {status !== "loading" && !session?.user ? (
+        <div className="text-sm text-gray-700">
+          Please <a href="/login" className="text-[#FF9933] underline">login</a> to create a post.
+        </div>
+      ) : (
       <form onSubmit={submitDemo} className="space-y-4">
         <div className="grid md:grid-cols-2 gap-4">
           <div>
@@ -216,7 +223,7 @@ export default function PostsPage() {
           {err && <span className="text-sm text-red-600">{err}</span>}
         </div>
       </form>
-
+      )}
       <div className="mt-6">
         <h4 className="font-semibold mb-2">Preview</h4>
         <div className="border rounded p-3 text-sm text-gray-600">

@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import crypto from "node:crypto";
 import { hashPassword } from "@/lib/hash";
 
+export const runtime = "nodejs";
+
 function b64urlToBuf(b64url: string) {
   const pad = 4 - (b64url.length % 4 || 4);
   const b64 = (b64url + "====".slice(0, pad)).replace(/-/g, "+").replace(/_/g, "/");

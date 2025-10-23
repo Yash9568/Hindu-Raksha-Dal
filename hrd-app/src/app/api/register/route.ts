@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/hash";
 
+export const runtime = "nodejs";
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -9,16 +11,19 @@ export async function POST(req: Request) {
     if (!name || !email || !password) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
+    const phoneNormRaw = String(phone || "").trim();
+    const phoneDigits = phoneNormRaw.replace(/\D+/g, "");
+    if (!phoneDigits) {
+      return NextResponse.json({ error: "Phone is required" }, { status: 400 });
+    }
 
     const emailNorm = String(email).toLowerCase().trim();
-    const phoneNorm = phone ? String(phone).trim() : null;
-    const phoneDigits = phoneNorm ? phoneNorm.replace(/\D+/g, "") : null;
 
     const existing = await prisma.user.findFirst({
       where: {
         OR: [
           { email: emailNorm },
-          ...(phoneDigits ? [{ phone: phoneDigits }] as const : []),
+          { phone: phoneDigits },
         ],
       },
     });
@@ -28,7 +33,7 @@ export async function POST(req: Request) {
 
     const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({
-      data: { name, email: emailNorm, phone: phoneDigits || null, photoUrl, passwordHash },
+      data: { name, email: emailNorm, phone: phoneDigits, photoUrl: photoUrl || null, passwordHash },
       select: { id: true, name: true, email: true },
     });
 
