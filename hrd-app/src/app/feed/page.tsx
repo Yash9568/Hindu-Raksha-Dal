@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 function normalizeMedia(media: any): string[] {
   if (!media) return [];
   if (Array.isArray(media)) return media.filter(Boolean);
@@ -13,12 +15,17 @@ function isVideo(url?: string) {
 }
 
 export default async function FeedPage() {
-  const posts = await prisma.post.findMany({
-    where: { status: "APPROVED" },
-    orderBy: { createdAt: "desc" },
-    include: { author: { select: { name: true, photoUrl: true } } },
-    take: 50,
-  });
+  let posts: any[] = [];
+  try {
+    posts = await prisma.post.findMany({
+      where: { status: "APPROVED" },
+      orderBy: { createdAt: "desc" },
+      include: { author: { select: { name: true, photoUrl: true } } },
+      take: 50,
+    });
+  } catch (e) {
+    posts = [];
+  }
 
   return (
     <section className="max-w-2xl mx-auto">
