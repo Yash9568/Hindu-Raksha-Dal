@@ -108,14 +108,14 @@ export default function ProfilePage() {
       return false;
     }
     // If a new file is selected, resolve its URL now.
-    // In production we prefer Cloudinary (local FS is not persistent on many hosts).
+    // In production we require Cloudinary (no local/filesystem or data-URL fallbacks).
     let photoUrlToSend = (photoUrl || "").trim();
     if (selectedFile) {
       setUploading(true);
       try {
         const isProd = process.env.NODE_ENV === "production";
         if (isProd) {
-          // Cloudinary first (recommended in production)
+          // Cloudinary required in production
           let cfg: any = null;
           try {
             const r = await fetch("/api/cloudinary/sign");
@@ -134,17 +134,10 @@ export default function ProfilePage() {
             if (!up.ok) throw new Error(data?.error?.message || "Upload failed");
             photoUrlToSend = data.secure_url;
           } else {
-            // Fallback: embed Data URL
-            const toDataUrl = (f: File) => new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(reader.result as string);
-              reader.onerror = reject;
-              reader.readAsDataURL(f);
-            });
-            photoUrlToSend = await toDataUrl(selectedFile);
+            throw new Error("Image upload requires Cloudinary in production. Configure CLOUDINARY_* env vars.");
           }
         } else {
-          // Development: try local first, then Cloudinary, then Data URL
+          // Development: try local first, then Cloudinary; if both fail, abort
           try {
             const fdLocal = new FormData();
             fdLocal.append("file", selectedFile);
@@ -174,13 +167,7 @@ export default function ProfilePage() {
               if (!up.ok) throw new Error(data?.error?.message || "Upload failed");
               photoUrlToSend = data.secure_url;
             } else {
-              const toDataUrl = (f: File) => new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result as string);
-                reader.onerror = reject;
-                reader.readAsDataURL(f);
-              });
-              photoUrlToSend = await toDataUrl(selectedFile);
+              throw new Error("Image upload failed in development. Try configuring Cloudinary.");
             }
           }
         }
