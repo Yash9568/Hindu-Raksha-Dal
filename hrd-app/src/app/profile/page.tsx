@@ -107,24 +107,15 @@ export default function ProfilePage() {
       setSaving(false);
       return false;
     }
-    // If a new file is selected, resolve its URL now (Cloudinary if available, else embed)
+    // If a new file is selected, resolve its URL now.
+    // In production we prefer Cloudinary (local FS is not persistent on many hosts).
     let photoUrlToSend = (photoUrl || "").trim();
     if (selectedFile) {
       setUploading(true);
       try {
-        // 1) Try same-origin upload (public/uploads)
-        try {
-          const fdLocal = new FormData();
-          fdLocal.append("file", selectedFile);
-          const upLocal = await fetch("/api/upload", { method: "POST", body: fdLocal });
-          if (upLocal.ok) {
-            const j = await upLocal.json();
-            if (j?.url) photoUrlToSend = j.url as string;
-          } else {
-            throw new Error("local-upload-failed");
-          }
-        } catch {
-          // 2) Try Cloudinary
+        const isProd = process.env.NODE_ENV === "production";
+        if (isProd) {
+          // Cloudinary first (recommended in production)
           let cfg: any = null;
           try {
             const r = await fetch("/api/cloudinary/sign");
@@ -143,7 +134,7 @@ export default function ProfilePage() {
             if (!up.ok) throw new Error(data?.error?.message || "Upload failed");
             photoUrlToSend = data.secure_url;
           } else {
-            // 3) Embed as data URL
+            // Fallback: embed Data URL
             const toDataUrl = (f: File) => new Promise<string>((resolve, reject) => {
               const reader = new FileReader();
               reader.onload = () => resolve(reader.result as string);
@@ -151,6 +142,46 @@ export default function ProfilePage() {
               reader.readAsDataURL(f);
             });
             photoUrlToSend = await toDataUrl(selectedFile);
+          }
+        } else {
+          // Development: try local first, then Cloudinary, then Data URL
+          try {
+            const fdLocal = new FormData();
+            fdLocal.append("file", selectedFile);
+            const upLocal = await fetch("/api/upload", { method: "POST", body: fdLocal });
+            if (upLocal.ok) {
+              const j = await upLocal.json();
+              if (j?.url) photoUrlToSend = j.url as string;
+            } else {
+              throw new Error("local-upload-failed");
+            }
+          } catch {
+            let cfg: any = null;
+            try {
+              const r = await fetch("/api/cloudinary/sign");
+              if (r.ok) cfg = await r.json();
+            } catch {}
+            if (cfg) {
+              const fd = new FormData();
+              fd.append("file", selectedFile);
+              fd.append("api_key", cfg.apiKey);
+              fd.append("timestamp", String(cfg.timestamp));
+              fd.append("folder", cfg.folder);
+              fd.append("signature", cfg.signature);
+              const endpoint = `https://api.cloudinary.com/v1_1/${cfg.cloudName}/auto/upload`;
+              const up = await fetch(endpoint, { method: "POST", body: fd });
+              const data = await up.json();
+              if (!up.ok) throw new Error(data?.error?.message || "Upload failed");
+              photoUrlToSend = data.secure_url;
+            } else {
+              const toDataUrl = (f: File) => new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(f);
+              });
+              photoUrlToSend = await toDataUrl(selectedFile);
+            }
           }
         }
       } catch (e: any) {
