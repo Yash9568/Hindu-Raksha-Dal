@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "node:crypto";
-import { sendEmail } from "@/lib/email";
+import { sendResetEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -45,17 +45,8 @@ export async function POST(req: Request) {
     const base = origin || (new URL(req.url)).origin;
     const resetUrl = `${base}/reset?token=${encodeURIComponent(token)}`;
 
-    // Send email if configured
-    let emailSent = false;
-    const subject = "Reset your password";
-    const html = `
-      <p>Hello ${user.name || ""},</p>
-      <p>You requested a password reset. Click the link below to set a new password. This link expires in 15 minutes.</p>
-      <p><a href="${resetUrl}">Reset Password</a></p>
-      <p>If you did not request this, please ignore this email.</p>
-    `;
-    const res = await sendEmail(email, subject, html);
-    emailSent = !!res.ok;
+    // Send reset email
+    const emailSent = await sendResetEmail(email, resetUrl);
 
     return NextResponse.json({ message: emailSent ? "Reset link emailed" : "Reset link generated" }, { status: 200 });
   } catch (e: any) {
