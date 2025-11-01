@@ -43,7 +43,6 @@ export const authOptions: NextAuthOptions = {
             id: user.id,
             name: user.name,
             email: user.email,
-            image: user.photoUrl,
             role: user.role,
           } as any;
         } catch (err) {
@@ -65,12 +64,20 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.sub = (user as any).id || token.sub;
         (token as any).role = (user as any).role || (token as any).role || "MEMBER";
+        // Remove potentially large defaults (name/email/picture) from token to keep cookie small
+        delete (token as any).name;
+        delete (token as any).email;
+        delete (token as any).picture;
       } else if (token?.sub) {
         // Ensure role is present even on subsequent requests
         if (!(token as any).role) {
           const dbUser = await prisma.user.findUnique({ where: { id: token.sub } });
           (token as any).role = dbUser?.role || "MEMBER";
         }
+        // Also ensure we don't carry large defaults on subsequent requests
+        delete (token as any).name;
+        delete (token as any).email;
+        delete (token as any).picture;
       }
       return token;
     },

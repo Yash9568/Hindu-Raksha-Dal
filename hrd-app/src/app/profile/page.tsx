@@ -14,6 +14,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
+  const msgRef = useRef<HTMLDivElement>(null);
   const [pwOld, setPwOld] = useState("");
   const [pwNew, setPwNew] = useState("");
   const [pwMsg, setPwMsg] = useState<string | null>(null);
@@ -84,6 +85,12 @@ export default function ProfilePage() {
     if (photoUrl) setCacheBust((n) => n + 1);
   }, [photoUrl]);
 
+  useEffect(() => {
+    if (msg) {
+      try { msgRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch {}
+    }
+  }, [msg]);
+
   // Ctrl+S to save
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -107,10 +114,12 @@ export default function ProfilePage() {
       setSaving(false);
       return false;
     }
-    // If a new file is selected, resolve its URL now.
-    // In production we require Cloudinary (no local/filesystem or data-URL fallbacks).
+    // If a new file is selected, resolve to a hosted URL now.
+    // In production we require Cloudinary (no local/filesystem fallbacks).
     let photoUrlToSend = (photoUrl || "").trim();
-    if (selectedFile) {
+    const photoUpdatePlanned = !!selectedFile;
+    let fileToUpload: File | null = selectedFile;
+    if (fileToUpload) {
       setUploading(true);
       try {
         const isProd = process.env.NODE_ENV === "production";
@@ -123,7 +132,7 @@ export default function ProfilePage() {
           } catch {}
           if (cfg) {
             const fd = new FormData();
-            fd.append("file", selectedFile);
+            fd.append("file", fileToUpload);
             fd.append("api_key", cfg.apiKey);
             fd.append("timestamp", String(cfg.timestamp));
             fd.append("folder", cfg.folder);
@@ -140,11 +149,16 @@ export default function ProfilePage() {
           // Development: try local first, then Cloudinary; if both fail, abort
           try {
             const fdLocal = new FormData();
-            fdLocal.append("file", selectedFile);
+            fdLocal.append("file", fileToUpload);
             const upLocal = await fetch("/api/upload", { method: "POST", body: fdLocal });
             if (upLocal.ok) {
               const j = await upLocal.json();
-              if (j?.url) photoUrlToSend = j.url as string;
+              if (j?.url) {
+                const rel = j.url as string;
+                // Convert to absolute http(s) URL to satisfy API validation
+                const origin = typeof window !== "undefined" ? window.location.origin : "";
+                photoUrlToSend = origin ? new URL(rel, origin).toString() : rel;
+              }
             } else {
               throw new Error("local-upload-failed");
             }
@@ -156,7 +170,7 @@ export default function ProfilePage() {
             } catch {}
             if (cfg) {
               const fd = new FormData();
-              fd.append("file", selectedFile);
+              fd.append("file", fileToUpload);
               fd.append("api_key", cfg.apiKey);
               fd.append("timestamp", String(cfg.timestamp));
               fd.append("folder", cfg.folder);
@@ -186,7 +200,7 @@ export default function ProfilePage() {
     });
     const data = await res.json();
     if (res.ok) {
-      setMsg("Profile updated");
+      setMsg(photoUpdatePlanned ? "Photo updated" : "Profile updated");
       setMsgType("success");
       try {
         // Refresh NextAuth session so header and any session-bound UI reflect new photo/name
@@ -248,11 +262,17 @@ export default function ProfilePage() {
       <h3 className="text-xl font-semibold mb-4">My Profile</h3>
       {msg && (
         <div
-          className={`mb-4 text-sm px-3 py-2 rounded ${
+          className={`mb-4 text-sm px-3 py-2 rounded flex items-start gap-2 ${
             msgType === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"
           }`}
+          ref={msgRef}
         >
-          {msg}
+          {msgType === "success" ? (
+            <span aria-hidden>✓</span>
+          ) : (
+            <span aria-hidden>!</span>
+          )}
+          <span>{msg}</span>
         </div>
       )}
       {/* Tabs */}
@@ -322,6 +342,10 @@ export default function ProfilePage() {
         </div>
       ) : tab === "edit" ? (
         <div className="grid gap-4">
+          {/** Avoid rendering massive base64 data URLs in the UI */}
+          {(() => {
+            return null;
+          })()}
           {/* Membership section (read-only) */}
           <div>
             <div className="text-xs uppercase text-gray-500">Membership</div>
@@ -383,7 +407,7 @@ export default function ProfilePage() {
             />
           </div>
 
-          {/* Photo URL */}
+          {/* Photo upload only (no manual URL field) */}
           <div
             onDragOver={(e) => {
               e.preventDefault();
@@ -397,22 +421,7 @@ export default function ProfilePage() {
               if (f) selectPhoto(f);
             }}
           >
-            <div className="text-xs uppercase text-gray-500">Photo URL</div>
-            <div className="text-base break-all text-gray-700">{photoUrl || "—"}</div>
-            <button
-              type="button"
-              className="text-xs text-[#FF9933] underline mt-1"
-              onClick={() => photoInputRef.current?.focus()}
-            >
-              Edit
-            </button>
-            <input
-              className="mt-2 w-full border rounded px-3 py-2"
-              value={photoUrl}
-              onChange={(e) => setPhotoUrl(e.target.value)}
-              placeholder="Paste image URL"
-              ref={photoInputRef}
-            />
+            <div className="text-xs uppercase text-gray-500">Photo</div>
             <div className="mt-2 flex items-center gap-3 w-full">
               <div className="w-full">
                 <label className="block text-xs text-gray-600 mb-1">Choose photo</label>
