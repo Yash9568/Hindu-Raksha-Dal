@@ -41,7 +41,8 @@ export async function POST(req: Request) {
     await prisma.user.update({ where: { id }, data: { passwordHash } });
 
     return NextResponse.json({ message: "Password updated" }, { status: 200 });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "Server error" }, { status: 400 });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Server error";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

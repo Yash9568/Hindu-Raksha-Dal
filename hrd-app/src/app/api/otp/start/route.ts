@@ -11,7 +11,7 @@ function base64url(input: Buffer | string) {
     .replace(/\//g, "_");
 }
 
-function sign(payload: any, secret: string, expiresInSec = 300) {
+function sign(payload: Record<string, unknown>, secret: string, expiresInSec = 300) {
   const header = { alg: "HS256", typ: "JWT" };
   const now = Math.floor(Date.now() / 1000);
   const pl = { ...payload, iat: now, exp: now + expiresInSec };
@@ -25,8 +25,8 @@ function sign(payload: any, secret: string, expiresInSec = 300) {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({}));
-    const raw = String(body?.phone || "");
+    const body = await req.json().catch(() => ({} as Record<string, unknown>));
+    const raw = String((body as Record<string, unknown>).phone || "");
     const phone = raw.replace(/\D+/g, "");
     if (!phone) return NextResponse.json({ error: "Phone required" }, { status: 400 });
     if (!process.env.NEXTAUTH_SECRET) return NextResponse.json({ error: "OTP disabled" }, { status: 500 });
@@ -53,16 +53,19 @@ export async function POST(req: Request) {
           body: params,
         });
         if (!resp.ok) {
-          const j = await resp.json().catch(() => ({}));
-          return NextResponse.json({ error: j?.message || "SMS send failed" }, { status: 500 });
+          const j = await resp.json().catch(() => ({} as Record<string, unknown>));
+          const msg = (j as Record<string, unknown>).message;
+          return NextResponse.json({ error: typeof msg === "string" ? msg : "SMS send failed" }, { status: 500 });
         }
-      } catch (e: any) {
-        return NextResponse.json({ error: e?.message || "SMS error" }, { status: 500 });
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : "SMS error";
+        return NextResponse.json({ error: message }, { status: 500 });
       }
       return NextResponse.json({ message: "OTP sent", token }, { status: 200 });
     }
     return NextResponse.json({ message: "OTP sent", token, devCode: process.env.NODE_ENV !== "production" ? code : undefined }, { status: 200 });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "Server error" }, { status: 500 });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

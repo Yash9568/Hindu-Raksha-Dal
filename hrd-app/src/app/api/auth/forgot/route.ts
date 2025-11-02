@@ -13,7 +13,7 @@ function base64url(input: Buffer | string) {
     .replace(/\//g, "_");
 }
 
-function sign(payload: any, secret: string, expiresInSec = 900) {
+function sign(payload: Record<string, unknown>, secret: string, expiresInSec = 900) {
   const header = { alg: "HS256", typ: "JWT" };
   const now = Math.floor(Date.now() / 1000);
   const pl = { ...payload, iat: now, exp: now + expiresInSec };
@@ -27,8 +27,8 @@ function sign(payload: any, secret: string, expiresInSec = 900) {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({}));
-    const email = (body?.email || "").toLowerCase().trim();
+    const body = await req.json().catch(() => ({} as Record<string, unknown>));
+    const email = String((body as Record<string, unknown>).email || "").toLowerCase().trim();
     if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
 
     const user = await prisma.user.findUnique({ where: { email } });
@@ -49,7 +49,8 @@ export async function POST(req: Request) {
     const emailSent = await sendResetEmail(email, resetUrl);
 
     return NextResponse.json({ message: emailSent ? "Reset link emailed" : "Reset link generated" }, { status: 200 });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "Server error" }, { status: 500 });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

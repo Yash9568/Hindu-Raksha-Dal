@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import type { NextRequest } from "next/server";
 
 function pad(n: number, width = 5) {
   const s = String(n);
@@ -25,11 +26,11 @@ async function generateUniqueMemberId(): Promise<string> {
 
 export async function POST(req: Request) {
   // Identify user from session or token
-  let session = await getServerSession(authOptions);
-  let userId = (session?.user as any)?.id as string | undefined;
+  const session = await getServerSession(authOptions);
+  let userId: string | undefined = session?.user?.id;
   if (!userId) {
-    const token = await getToken({ req: req as any, secret: process.env.NEXTAUTH_SECRET });
-    userId = (token?.sub as string) || undefined;
+    const token = await getToken({ req: req as unknown as NextRequest, secret: process.env.NEXTAUTH_SECRET });
+    userId = token?.sub ?? undefined;
   }
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

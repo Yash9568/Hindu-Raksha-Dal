@@ -57,8 +57,9 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ user, membership }, { status: 200 });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("/api/membership/lookup error", e);
-    return NextResponse.json({ error: e?.message || "Internal error" }, { status: 500 });
+    const message = e instanceof Error ? e.message : "Internal error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
