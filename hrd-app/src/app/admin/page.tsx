@@ -3,14 +3,16 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
+type Media = string | { url: string } | string[] | null | undefined;
 type Post = {
   id: string;
   title: string;
   content: string;
   createdAt: string;
   type: "TEXT" | "IMAGE" | "VIDEO";
-  media?: any; // JSON field: expected array of URLs or single URL
+  media?: Media; // JSON field: expected array of URLs or single URL
   author: { id: string; name: string | null; email: string | null };
 };
 
@@ -33,7 +35,7 @@ export default function AdminPage() {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [msgQuery, setMsgQuery] = useState("");
   const [msgStatus, setMsgStatus] = useState<"ALL" | "NEW" | "READ" | "ARCHIVED">("ALL");
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
   useEffect(() => {
     if (status === "loading") return;
     if (!session?.user) {
@@ -119,10 +121,9 @@ export default function AdminPage() {
               let mediaArr: string[] = [];
               if (Array.isArray(p.media)) mediaArr = p.media as string[];
               else if (p.media && typeof p.media === "string") mediaArr = [p.media];
-              else if (p.media && typeof p.media === "object" && (p.media as any).url) mediaArr = [(p.media as any).url];
+              else if (p.media && typeof p.media === "object" && "url" in p.media) mediaArr = [p.media.url as string];
               const first = mediaArr[0];
-              const isVideo = p.type === "VIDEO" || (!!first && /\.(mp4|webm|ogg)(\?|#|$)/i.test(first));
-              const isImage = p.type === "IMAGE" || (!!first && /\.(png|jpe?g|gif|webp|avif|svg)(\?|#|$)/i.test(first));
+              const isVideo = p.type === "VIDEO" || (!!first && /(\.(mp4|webm|ogg))(\?|#|$)/i.test(first));
               return (
                 <li key={p.id} className="border rounded p-3">
                   <div className="flex items-start gap-3 justify-between">
@@ -133,7 +134,7 @@ export default function AdminPage() {
                           isVideo ? (
                             <video src={first} className="w-full h-full object-cover" controls preload="metadata" />
                           ) : (
-                            <img src={first} className="w-full h-full object-cover" alt="media" />
+                            <Image src={first} className="w-full h-full object-cover" alt="media" width={128} height={80} />
                           )
                         ) : (
                           <span className="text-xs text-gray-400">No media</span>
@@ -179,12 +180,14 @@ export default function AdminPage() {
             className="border rounded px-3 py-2 w-64"
             placeholder="Search name, email, phone, subject, message"
             value={msgQuery}
-            onChange={(e) => setMsgQuery(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMsgQuery(e.target.value)}
           />
           <select
             className="border rounded px-3 py-2"
             value={msgStatus}
-            onChange={(e) => setMsgStatus(e.target.value as any)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+              setMsgStatus(e.target.value as "ALL" | "NEW" | "READ" | "ARCHIVED")
+            }
           >
             <option value="ALL">All</option>
             <option value="NEW">New</option>

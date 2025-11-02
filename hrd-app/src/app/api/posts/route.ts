@@ -32,8 +32,9 @@ export async function GET(req: Request) {
       take: 50,
     });
     return NextResponse.json({ posts });
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message || "Server error" }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
     const { title, content, type, categories, tags, media } = body || {};
     if (!title || !content) return NextResponse.json({ error: "Missing title/content" }, { status: 400 });
 
-    const authorId = (session.user as any).id as string;
+    const authorId = session.user.id;
 
     // Prepare categories/tags from comma separated strings (denormalized)
     const catList: string[] = (categories || "")
@@ -74,7 +75,8 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ post }, { status: 201 });
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message || "Server error" }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

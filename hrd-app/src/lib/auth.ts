@@ -19,7 +19,8 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         try {
           if (!credentials) return null;
-          const { emailOrPhone, password } = credentials as Record<string, string>;
+          const emailOrPhone = typeof credentials.emailOrPhone === "string" ? credentials.emailOrPhone : "";
+          const password = typeof credentials.password === "string" ? credentials.password : "";
           if (!emailOrPhone || !password) return null;
 
           const identifierRaw = String(emailOrPhone).trim();
@@ -44,7 +45,7 @@ export const authOptions: NextAuthOptions = {
             name: user.name,
             email: user.email,
             role: user.role,
-          } as any;
+          };
         } catch (err) {
           if (process.env.NODE_ENV !== "production") {
             console.error("NextAuth authorize error:", err);
@@ -62,30 +63,30 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       // Persist id and role into the token
       if (user) {
-        token.sub = (user as any).id || token.sub;
-        (token as any).role = (user as any).role || (token as any).role || "MEMBER";
+        token.sub = user.id || token.sub;
+        token.role = user.role || token.role || "MEMBER";
         // Remove potentially large defaults (name/email/picture) from token to keep cookie small
-        delete (token as any).name;
-        delete (token as any).email;
-        delete (token as any).picture;
+        delete token.name;
+        delete token.email;
+        delete token.picture;
       } else if (token?.sub) {
         // Ensure role is present even on subsequent requests
-        if (!(token as any).role) {
+        if (!token.role) {
           const dbUser = await prisma.user.findUnique({ where: { id: token.sub } });
-          (token as any).role = dbUser?.role || "MEMBER";
+          token.role = dbUser?.role || "MEMBER";
         }
         // Also ensure we don't carry large defaults on subsequent requests
-        delete (token as any).name;
-        delete (token as any).email;
-        delete (token as any).picture;
+        delete token.name;
+        delete token.email;
+        delete token.picture;
       }
       return token;
     },
     async session({ session, token }) {
       // Expose id and role on session
       if (session.user) {
-        (session.user as any).id = token.sub;
-        (session.user as any).role = (token as any).role || "MEMBER";
+        session.user.id = token.sub as string;
+        session.user.role = token.role || "MEMBER";
       }
       return session;
     },
