@@ -20,6 +20,9 @@ export const metadata: Metadata = {
   description:
     "Community platform to share knowledge about Hindu culture, traditions, festivals, and values.",
   manifest: "/manifest.json",
+};
+
+export const viewport = {
   themeColor: "#ff0000",
 };
 
@@ -33,7 +36,6 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#ff0000" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-800`}>
         <Providers>

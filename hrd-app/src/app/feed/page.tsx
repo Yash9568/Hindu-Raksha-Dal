@@ -92,7 +92,14 @@ export default async function FeedPage() {
                   {showVideo ? (
                     <video className="w-full max-h-[70vh] object-contain bg-black" src={first} controls preload="metadata" />
                   ) : (
-                    <Image src={first} alt={p.title || "post media"} className="w-full object-contain bg-black" width={1920} height={1080} />
+                    <Image
+                      src={first}
+                      alt={p.title || "post media"}
+                      className="w-full object-contain bg-black"
+                      width={1920}
+                      height={1080}
+                      unoptimized={first.startsWith("/")}
+                    />
                   )}
                 </div>
               ) : null}
