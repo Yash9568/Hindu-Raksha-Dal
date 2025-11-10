@@ -135,14 +135,8 @@ export default function AdminPage() {
                           isVideo ? (
                             <video src={first} className="w-full h-full object-cover" controls preload="metadata" />
                           ) : (
-                            <Image
-                              src={first}
-                              className="w-full h-full object-cover"
-                              alt="media"
-                              width={128}
-                              height={80}
-                              unoptimized={first.startsWith("/")}
-                            />
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={first} className="w-full h-full object-cover" alt="media" />
                           )
                         ) : (
                           <span className="text-xs text-gray-400">No media</span>

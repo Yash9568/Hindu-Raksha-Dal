@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import Image from "next/image";
 import type { Prisma } from "@prisma/client";
 import DeletePostButton from "@/components/DeletePostButton";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +34,9 @@ function normalizeMedia(media: unknown): string[] {
     }
     return [m];
   });
-  return expandParsed.map(pickUrl).filter(Boolean);
+  // Upgrade http->https to avoid mixed-content blocking on HTTPS sites
+  const upgrade = (u: string) => (u.startsWith("http://") ? u.replace("http://", "https://") : u);
+  return expandParsed.map(pickUrl).filter(Boolean).map(upgrade);
 }
 
 function isVideo(url?: string) {
@@ -44,10 +48,19 @@ type PostWithAuthor = Prisma.PostGetPayload<{
 }>;
 
 export default async function FeedPage() {
+  const session = await getServerSession(authOptions);
+  const myId = session?.user?.id;
   let posts: PostWithAuthor[] = [];
   try {
     posts = await prisma.post.findMany({
-      where: { status: "APPROVED" },
+      where: myId
+        ? {
+            OR: [
+              { status: "APPROVED" },
+              { AND: [{ status: "PENDING" }, { authorId: myId }] },
+            ],
+          }
+        : { status: "APPROVED" },
       orderBy: { createdAt: "desc" },
       include: { author: { select: { name: true, photoUrl: true } } },
       take: 50,
@@ -94,14 +107,7 @@ export default async function FeedPage() {
                   {showVideo ? (
                     <video className="w-full max-h-[70vh] object-contain bg-black" src={first} controls preload="metadata" />
                   ) : (
-                    <Image
-                      src={first}
-                      alt={p.title || "post media"}
-                      className="w-full object-contain bg-black"
-                      width={1920}
-                      height={1080}
-                      unoptimized={first.startsWith("/")}
-                    />
+                    <img src={first} alt={p.title || "post media"} className="w-full object-contain bg-black" />
                   )}
                 </div>
               ) : null}
