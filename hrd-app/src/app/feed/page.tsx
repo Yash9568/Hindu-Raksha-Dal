@@ -6,13 +6,32 @@ export const dynamic = "force-dynamic";
 
 function normalizeMedia(media: unknown): string[] {
   if (!media) return [];
-  if (Array.isArray(media)) return media.filter(Boolean);
-  if (typeof media === "string") return [media];
-  if (typeof media === "object" && media !== null && "url" in media) {
-    const url = (media as { url?: unknown }).url;
-    if (typeof url === "string") return [url];
-  }
-  return [];
+  // If media is already an array, flatten one level
+  const arr = Array.isArray(media) ? media : [media];
+  const flat = arr.flatMap((x) => (Array.isArray(x) ? x : [x]));
+  const pickUrl = (m: any): string => {
+    if (typeof m === "string") return m;
+    return (
+      m?.url || m?.secure_url || m?.src || m?.path || m?.link || ""
+    );
+  };
+  // If any item is a JSON string, try parse
+  const expandParsed = flat.flatMap((m) => {
+    if (typeof m === "string") {
+      const s = m.trim();
+      if (s.startsWith("[") || s.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(s);
+          const arr2 = Array.isArray(parsed) ? parsed : [parsed];
+          return arr2;
+        } catch {
+          return [m];
+        }
+      }
+    }
+    return [m];
+  });
+  return expandParsed.map(pickUrl).filter(Boolean);
 }
 
 function isVideo(url?: string) {

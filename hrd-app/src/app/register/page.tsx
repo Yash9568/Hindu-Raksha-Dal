@@ -105,8 +105,20 @@ export default function RegisterPage() {
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
         {ok && <p className="text-sm text-green-600">{ok}</p>}
-        <button disabled={loading} type="submit" className="bg-[#FF9933] text-white px-4 py-2 rounded w-full">
-          {loading ? "Creating..." : "Create Account"}
+        <button
+          disabled={loading}
+          type="submit"
+          className={`bg-[#FF9933] text-white px-4 py-2 rounded w-full inline-flex items-center justify-center gap-2 ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
+          aria-busy={loading}
+          aria-disabled={loading}
+        >
+          {loading && (
+            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+          )}
+          {loading ? "Please wait…" : "Create Account"}
         </button>
       </form>
       <p className="text-sm text-gray-600 mt-3">

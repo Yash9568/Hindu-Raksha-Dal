@@ -74,8 +74,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <!-- QRCode generator -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 </head>
 <body>
   <div class="container">
@@ -129,7 +127,6 @@
             <div class="divider"></div>
             <div class="id" id="memberId">Not generated</div>
             <img id="logoImg" class="logo" alt="Logo" src="/logo.png" onerror="this.style.display='none'"/>
-            <div class="qr-box"><canvas id="frontQrCanvas" width="56" height="56"></canvas></div>
             <div class="row">
               <div class="avatar"><img id="avatarImg" alt="User" /></div>
               <div class="details">
@@ -172,19 +169,11 @@
         btnGenerate: document.getElementById('btnGenerate'),
         btnDownloadPDF: document.getElementById('btnDownloadPDF'),
         logoImg: document.getElementById('logoImg'),
-        frontQrCanvas: document.getElementById('frontQrCanvas'),
         issued: document.getElementById('issued'),
         // valid removed
         address: document.getElementById('address'),
         fAddress: document.getElementById('fAddress'),
       };
-
-      async function renderQRTo(canvas, text){
-        try {
-          if (!window.QRCode || !canvas) return;
-          await QRCode.toCanvas(canvas, text || 'https://hindurakshadal.org', { width: canvas.width, margin: 0 });
-        } catch {}
-      }
 
       function syncPreview(){
         els.fName.textContent = els.name.value || '—';
@@ -258,13 +247,17 @@
       els.btnGenerate.addEventListener('click', async () => {
         try {
           if (!validateRequired()) return;
+          // UI: indicate generating
+          if (els.btnGenerate) {
+            els.btnGenerate.disabled = true;
+            const oldTextGen = els.btnGenerate.textContent;
+            els.btnGenerate.setAttribute('data-old-text', oldTextGen || 'Generate Member ID');
+            els.btnGenerate.textContent = 'Please wait…';
+          }
           // Deterministic Member ID from Name + Mobile
           const now = new Date();
           const id = buildDeterministicId(els.name.value, els.mobile.value);
           els.memberId.textContent = id;
-          // Front QR using verify URL
-          const verifyUrl = (location.origin || 'https://hindurakshadal.org') + '/verify?m=' + encodeURIComponent(id);
-          await renderQRTo(els.frontQrCanvas, verifyUrl);
           // Set issued date (persist first generation date for this ID)
           try {
             const k = 'hrd_issued_' + id;
@@ -296,28 +289,29 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload),
             });
-            const s = document.getElementById('saveStatus');
             if (!resp.ok) {
               console.warn('Anonymous membership save failed with status', resp.status);
-              if (s) s.textContent = 'Save failed (status ' + resp.status + ').';
             } else {
               const data = await resp.json().catch(()=>null);
               if (data && data.membership && data.membership.memberId) {
                 els.memberId.textContent = data.membership.memberId;
-                if (s) s.textContent = 'Saved to database: ' + data.membership.memberId;
-              } else {
-                if (s) s.textContent = 'Saved.';
               }
             }
           } catch (e) {
             console.warn('Anonymous membership save error', e);
-            const s = document.getElementById('saveStatus');
-            if (s) s.textContent = 'Save error. Check console.';
+            // UI message suppressed by request
           }
           // Enable download after successful generation steps
           if (els.btnDownloadPDF) els.btnDownloadPDF.disabled = false;
         } catch (e) {
           alert('Failed to generate Member ID');
+        } finally {
+          // Restore generate button
+          if (els.btnGenerate) {
+            const t = els.btnGenerate.getAttribute('data-old-text') || 'Generate Member ID';
+            els.btnGenerate.textContent = t;
+            els.btnGenerate.disabled = false;
+          }
         }
       });
 
@@ -407,6 +401,10 @@
           return;
         }
         try {
+          // UI: disable during download (no text change)
+          if (els.btnDownloadPDF) {
+            els.btnDownloadPDF.disabled = true;
+          }
           await waitForReady();
           const area = els.cardArea;
           // Ensure footer is visible and has text
@@ -429,22 +427,7 @@
           } catch {}
           // Give layout a frame to flush updated text before capture
           await new Promise(r => requestAnimationFrame(() => r(true)));
-          // Swap QR canvas with an IMG to guarantee capture
-          let qrImg, qrParent;
-          try {
-            const qr = els.frontQrCanvas;
-            if (qr) {
-              const data = qr.toDataURL('image/png');
-              if (data && data.length > 1000) {
-                qrImg = document.createElement('img');
-                qrImg.src = data;
-                qrImg.style.width = qr.width + 'px';
-                qrImg.style.height = qr.height + 'px';
-                qrParent = qr.parentNode;
-                if (qrParent) { qrParent.replaceChild(qrImg, qr); }
-              }
-            }
-          } catch {}
+          // QR code removed per request; no swap needed
 
           let canvas = await capture(area);
           // Retry once if zero-sized canvas
@@ -510,15 +493,15 @@
           pdf.rect(x, y, drawW, drawH);
 
           pdf.save((els.memberId.textContent || 'membership') + '.pdf');
-          // Restore QR canvas
-          try {
-            if (qrImg && qrParent) {
-              qrParent.replaceChild(els.frontQrCanvas, qrImg);
-            }
-          } catch {}
+          // QR code removed; nothing to restore
         } catch(e) {
           console.error(e);
           alert('PDF export failed.');
+        } finally {
+          // Restore download button
+          if (els.btnDownloadPDF) {
+            els.btnDownloadPDF.disabled = false;
+          }
         }
       });
 

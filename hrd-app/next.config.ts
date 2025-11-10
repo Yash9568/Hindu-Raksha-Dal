@@ -13,6 +13,9 @@ const baseConfig: NextConfig = {
     // Don't block production builds on ESLint errors
     ignoreDuringBuilds: true,
   },
+  images: {
+    domains: ["res.cloudinary.com", "lh3.googleusercontent.com", "ui-avatars.com"],
+  },
 };
 
 export default withPWAConfigured(baseConfig);
