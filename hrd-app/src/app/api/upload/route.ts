@@ -7,6 +7,14 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
+    // In production, writing to the local filesystem is not supported by most hosts
+    // and files under /public/uploads won't be served. Force clients to use Cloudinary.
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json(
+        { error: "Local upload is disabled in production. Use Cloudinary." },
+        { status: 400 }
+      );
+    }
     const form = await req.formData();
     const file = form.get("file") as unknown as File | null;
     if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });

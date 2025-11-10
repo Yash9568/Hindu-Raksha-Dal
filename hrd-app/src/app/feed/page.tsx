@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Image from "next/image";
 import type { Prisma } from "@prisma/client";
+import DeletePostButton from "@/components/DeletePostButton";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +80,7 @@ export default async function FeedPage() {
                   <div className="font-semibold">{p.author?.name || "Member"}</div>
                   <div className="text-xs text-gray-500">{when}</div>
                 </div>
+                <DeletePostButton postId={p.id} authorId={(p as any).authorId} className="ml-auto px-3 py-1 rounded border text-red-700 hover:bg-red-50" />
               </div>
 
               {/* Content */}

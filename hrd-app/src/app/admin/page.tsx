@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import DeletePostButton from "@/components/DeletePostButton";
 
 type Media = string | { url: string } | string[] | null | undefined;
 type Post = {
@@ -153,6 +154,7 @@ export default function AdminPage() {
                           <span className={`text-[10px] px-2 py-0.5 rounded-full border ${p.type === "VIDEO" ? "border-purple-300 text-purple-700 bg-purple-50" : p.type === "IMAGE" ? "border-blue-300 text-blue-700 bg-blue-50" : "border-gray-300 text-gray-700 bg-gray-50"}`}>
                             {p.type}
                           </span>
+                          <DeletePostButton postId={p.id} authorId={p.author.id} />
                         </div>
                         <div className="text-xs text-gray-500">by {p.author?.name || p.author?.email || "Unknown"}</div>
                         <p className="text-sm mt-2 whitespace-pre-wrap max-w-[60ch] line-clamp-3">{p.content}</p>
