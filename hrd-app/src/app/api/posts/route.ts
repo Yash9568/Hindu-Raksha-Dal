@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma, PostType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -60,16 +61,27 @@ export async function POST(req: Request) {
       .map((s: string) => s.trim().replace(/^#/, ""))
       .filter(Boolean);
 
+    // Normalize media: allow string or array, store as array of strings
+    let mediaArr: string[] | null = null;
+    if (typeof media === "string" && media.trim()) mediaArr = [media.trim()];
+    else if (Array.isArray(media)) mediaArr = media.map((m: any) => String(m)).filter(Boolean);
+
+    // Enforce media presence for IMAGE/VIDEO posts
+    const upperType = String(type || "TEXT").toUpperCase();
+    if ((upperType === "IMAGE" || upperType === "VIDEO") && (!mediaArr || mediaArr.length === 0)) {
+      return NextResponse.json({ error: "Media is required for IMAGE/VIDEO posts" }, { status: 400 });
+    }
+
     const post = await prisma.post.create({
       data: {
         title,
         content,
-        type: (type || "TEXT").toUpperCase(),
+        type: upperType as PostType,
         status: "PENDING",
         author: { connect: { id: authorId } },
         categories: catList,
         tags: tagList,
-        media: media ?? null,
+        media: mediaArr ?? null,
       },
       include: {},
     });

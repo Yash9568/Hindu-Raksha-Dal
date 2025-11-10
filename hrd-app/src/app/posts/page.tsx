@@ -30,6 +30,7 @@ export default function PostsPage() {
       // 1) Prepare media uploads (optional)
       const mediaUrls: string[] = [];
       if (imageFile || videoFile) {
+        const isProd = process.env.NODE_ENV === "production";
         let cloudCfg: any = null;
         async function uploadLocal(file: File) {
           const fd = new FormData();
@@ -65,13 +66,14 @@ export default function PostsPage() {
         }
 
         async function uploadWithFallback(file: File) {
-          try {
-            return await uploadLocal(file);
-          } catch {
+          if (isProd) {
+            // Production: require cloud upload
+            return await uploadCloud(file);
+          } else {
             try {
-              return await uploadCloud(file);
+              return await uploadLocal(file);
             } catch {
-              return ""; // give up silently, keep post text-only
+              return await uploadCloud(file);
             }
           }
         }
@@ -83,6 +85,11 @@ export default function PostsPage() {
         if (videoFile) {
           const url = await uploadWithFallback(videoFile);
           if (url) mediaUrls.push(url);
+        }
+
+        // If user selected a media but nothing uploaded, fail early
+        if ((imageFile || videoFile) && mediaUrls.length === 0) {
+          throw new Error("Media upload failed. Please try again.");
         }
       }
 

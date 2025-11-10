@@ -1,3 +1,32 @@
+  function normalizeMedia(media: unknown): string[] {
+    if (!media) return [];
+    const arr = Array.isArray(media) ? media : [media];
+    const flat = arr.flatMap((x) => (Array.isArray(x) ? x : [x]));
+    const pickUrl = (m: any): string => {
+      if (typeof m === "string") return m;
+      return m?.url || m?.secure_url || m?.src || m?.path || m?.link || "";
+    };
+    const expanded = flat.flatMap((m) => {
+      if (typeof m === "string") {
+        const s = m.trim();
+        if (s.startsWith("[") || s.startsWith("{")) {
+          try {
+            const parsed = JSON.parse(s);
+            return Array.isArray(parsed) ? parsed : [parsed];
+          } catch {
+            return [m];
+          }
+        }
+      }
+      return [m];
+    });
+    const upgrade = (u: string) => (u.startsWith("http://") ? u.replace("http://", "https://") : u);
+    return expanded.map(pickUrl).filter(Boolean).map(upgrade);
+  }
+
+  function looksVideo(url?: string) {
+    return !!url && /\.(mp4|webm|ogg)(\?|#|$)/i.test(url);
+  }
 "use client";
 
 import { useEffect, useState } from "react";
@@ -118,13 +147,9 @@ export default function AdminPage() {
         ) : (
           <ul className="space-y-3">
             {posts.map((p) => {
-              // Normalize media as array of URLs
-              let mediaArr: string[] = [];
-              if (Array.isArray(p.media)) mediaArr = p.media as string[];
-              else if (p.media && typeof p.media === "string") mediaArr = [p.media];
-              else if (p.media && typeof p.media === "object" && "url" in p.media) mediaArr = [p.media.url as string];
+              const mediaArr = normalizeMedia(p.media as unknown);
               const first = mediaArr[0];
-              const isVideo = p.type === "VIDEO" || (!!first && /(\.(mp4|webm|ogg))(\?|#|$)/i.test(first));
+              const isVideo = p.type === "VIDEO" || looksVideo(first);
               return (
                 <li key={p.id} className="border rounded p-3">
                   <div className="flex items-start gap-3 justify-between">
