@@ -1,32 +1,3 @@
-  function normalizeMedia(media: unknown): string[] {
-    if (!media) return [];
-    const arr = Array.isArray(media) ? media : [media];
-    const flat = arr.flatMap((x) => (Array.isArray(x) ? x : [x]));
-    const pickUrl = (m: any): string => {
-      if (typeof m === "string") return m;
-      return m?.url || m?.secure_url || m?.src || m?.path || m?.link || "";
-    };
-    const expanded = flat.flatMap((m) => {
-      if (typeof m === "string") {
-        const s = m.trim();
-        if (s.startsWith("[") || s.startsWith("{")) {
-          try {
-            const parsed = JSON.parse(s);
-            return Array.isArray(parsed) ? parsed : [parsed];
-          } catch {
-            return [m];
-          }
-        }
-      }
-      return [m];
-    });
-    const upgrade = (u: string) => (u.startsWith("http://") ? u.replace("http://", "https://") : u);
-    return expanded.map(pickUrl).filter(Boolean).map(upgrade);
-  }
-
-  function looksVideo(url?: string) {
-    return !!url && /\.(mp4|webm|ogg)(\?|#|$)/i.test(url);
-  }
 "use client";
 
 import { useEffect, useState } from "react";
@@ -34,6 +5,36 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import DeletePostButton from "@/components/DeletePostButton";
+
+function normalizeMedia(media: unknown): string[] {
+  if (!media) return [];
+  const arr = Array.isArray(media) ? media : [media];
+  const flat = arr.flatMap((x) => (Array.isArray(x) ? x : [x]));
+  const pickUrl = (m: any): string => {
+    if (typeof m === "string") return m;
+    return m?.url || m?.secure_url || m?.src || m?.path || m?.link || "";
+  };
+  const expanded = flat.flatMap((m) => {
+    if (typeof m === "string") {
+      const s = m.trim();
+      if (s.startsWith("[") || s.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(s);
+          return Array.isArray(parsed) ? parsed : [parsed];
+        } catch {
+          return [m];
+        }
+      }
+    }
+    return [m];
+  });
+  const upgrade = (u: string) => (u.startsWith("http://") ? u.replace("http://", "https://") : u);
+  return expanded.map(pickUrl).filter(Boolean).map(upgrade);
+}
+
+function looksVideo(url?: string) {
+  return !!url && /\.(mp4|webm|ogg)(\?|#|$)/i.test(url);
+}
 
 type Media = string | { url: string } | string[] | null | undefined;
 type Post = {
